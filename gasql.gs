@@ -77,6 +77,11 @@ function createTable(table) {
     return Object.keys(table);
   }
 
+  function getRow(i) {
+    var fields = getFields();
+    return fields.map(function(field) {return table[field][i];});
+  }
+
   function cols() {
     return getFields().length;
   }
@@ -252,17 +257,52 @@ function createTable(table) {
   }
 
   function group_by() {
-    args = objectToArray(arguments);
+    var roups = objectToArray(arguments);
     fields = getFields();
 
-    args.map(function(arg) {
+    groups.map(function(arg) {
       if (fields.indexOf(arg) === -1) {throw arg + "not found!";}
     })
 
-    var output = createTable(table);
-    output.groups = args;
+    var fields = getFields();
+    var currentRow;
+    var checkRow;
+    var nested = createOutput(fields);
 
-    return output;
+    function getRow(table, row, target) {
+      var fields = Object.keys(table);
+      fields = fields.filter(function(f) {return target.indexOf(f) !== -1;});
+      return fields.map(function(field) {
+        return table[field][row];
+      });
+    }
+
+    // Create a nested version of the table
+    for (var iRow in table[fields[0]]) {
+      currentRow = getRow(table, iRow, groups);
+      var found = false;
+      for (var oRow in nested[fields[0]]) {
+        checkRow = getRow(nested, oRow, groups);
+        if (JSON.stringify(currentRow) == JSON.stringify(checkRow)) {
+          found = oRow;
+          break;
+        }
+      }
+      if (found) {
+        fields.map(function(field) {if (groups.indexOf(field) === -1) {
+          nested[field][oRow].push(table[field][iRow]);
+        }}, this)
+      } else {
+        fields.map(function(field) { // emove map to not have gloal environment
+          if (groups.indexOf(field) === -1) {
+            nested[field].push([table[field][iRow]]);
+          } else {
+            nested[field].push(table[field][iRow]);
+          }
+        }, this);
+      }
+    }
+    return nested;
   }
 
   return {
@@ -273,6 +313,8 @@ function createTable(table) {
     select: select,
     filter: filter,
     union: union,
+    group_by: group_by,
+
 
     as: As,
     fun: Fun,
