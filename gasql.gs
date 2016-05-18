@@ -251,6 +251,20 @@ function createTable(table) {
     return createTable(output);
   }
 
+  function group_by() {
+    args = objectToArray(arguments);
+    fields = getFields();
+
+    args.map(function(arg) {
+      if (fields.indexOf(arg) === -1) {throw arg + "not found!";}
+    })
+
+    var output = createTable(table);
+    output.groups = args;
+
+    return output;
+  }
+
   return {
     table: table,
     createTable: createTable,
@@ -269,28 +283,4 @@ function createTable(table) {
     or: or,
     not: not
   };
-}
-
-
-function createTableFromMatrix(data) {
-  function verify2dArray() {
-    var errorMessage = "Data is not a 2 dimensional Array"
-    if (!Array.isArray(data)) {throw errorMessage;}
-    data.map(function (x) {if (!Array.isArray(x)) {throw errorMessage;}});
-
-  }
-
-  function makeTable() {
-    var output = {};
-    for (var col in data[0]) {
-      var field = data[0][col];
-      output[field] = [];
-      for (var row = 1; row < data.length; row++) {
-        output[field].push(data[row][col]);
-      }
-    }
-    return output;
-  }
-
-  return createTable(makeTable());
 }
