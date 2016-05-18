@@ -40,8 +40,37 @@ function createTable(table) {
     return output;
   }
 
-  function as(field, alias) {
+  function As(field, alias) {
     return {field: field, alias: alias};
+  }
+
+  function Fun(fun, name) {
+    var args = objectToArray(arguments);
+    args.splice(0,2);
+    return {fun: fun, alias: name, args: args};
+  }
+
+  function applyScalar(fun) {
+    var fields = getFields();
+    var f = fun.fun;
+    var args = fun.args;
+    var r = rows();
+
+    var args = args.map(function(arg) {
+      if (fields.indexOf(arg) === -1) {
+        return repeat(arg, r);
+      } else {
+        return table[arg];
+      }
+    });
+
+    var output = [];
+    var currentArgs;
+    for (var row = 0; row < r; row++) {
+      currentArgs = args.map(function(arg) {return arg[row];});
+      output.push(f.apply(this, currentArgs));
+    }
+    return output;
   }
 
   function getFields() {
@@ -140,21 +169,14 @@ function createTable(table) {
           throw field + "is not a field of this table";
         }
       }
-
-      if (typeof(field) === "object") {
-        if (! field.hasOwnProperty("field")) {
-          throw "Wrong type of Object supplied";
-        }
-        if (tableFields.indexOf(field.field) === -1) {
-          throw "Field " + field.field + "not found";
-        }
-      }
     });
 
     var output = {};
     fields.map(function (field) {
       if (typeof(field) == "string") {
       output[field] = table[field];
+    } else if (field.hasOwnProperty("fun")) {
+      output[field.alias] = applyScalar(field);
     } else {
       output[field.alias] = table[field.field];
     }
@@ -238,7 +260,8 @@ function createTable(table) {
     filter: filter,
     union: union,
 
-    as: as,
+    as: As,
+    fun: Fun,
     is: is,
     getFields: getFields,
     rows: rows,
