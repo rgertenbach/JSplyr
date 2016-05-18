@@ -80,6 +80,30 @@ function createTable(table) {
     return output;
   }
 
+  function and() {
+    var arguments = objectToArray(arguments);
+    var output = [];
+
+    for (var row in arguments[0]) {
+      output.push(arguments.reduce(function(a,b) {return a[row] && b[row];}));
+    }
+    return output;
+  }
+
+  function or() {
+    var arguments = objectToArray(arguments);
+    var output = [];
+
+    for (var row in arguments[0]) {
+      output.push(arguments.reduce(function(a,b) {return a[row] || b[row];}));
+    }
+    return output;
+  }
+
+  function not(x) {
+    return x.map(function(x) {return !x;});
+  }
+
   function select() {
     var fields = objectToArray(arguments);
 
@@ -126,7 +150,10 @@ function createTable(table) {
     as: as,
     is: is,
     getFields: getFields,
-    rows: rows
+    rows: rows,
+    and: and,
+    or: or,
+    not: not
   };
 }
 
