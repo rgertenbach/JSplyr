@@ -31,6 +31,10 @@ function createTable(table) {
     return Object.keys(table);
   }
 
+  function cols() {
+    return getFields().length;
+  }
+
   function rows() {
     return table[getFields()[0]].length;
   }
