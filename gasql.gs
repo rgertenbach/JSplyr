@@ -13,6 +13,23 @@ function createTable(table) {
     return output;
   }
 
+  function unique(a) {
+    var output = [];
+    a.map(function(e) {if (output.indexOf(e) === -1) {output.push(e);}});
+    return output;
+  }
+
+  function createOutput(fields) {
+    var output = {};
+    fields.map(function (field) {
+      if (typeof(field) == "string") {
+        output[field] = [];
+      } else {
+        output[field.alias] = [];
+      }});
+    return output;
+  }
+
   function toMatrix() {
     var output = [[]];
     var fields = getFields();
@@ -159,6 +176,58 @@ function createTable(table) {
     return createTable(output);
   }
 
+  /**
+   *  Behavior:
+   *  - undefined or 0 uses only common columns
+   *  - 1 uses only left columns
+   *  - 2 uses right columns
+   *  - 3 uses all columns
+   */
+  function union(t, behavior, empty) {
+    behavior = behavior || 0;
+
+    var lfields = getFields();
+    var rfields = t.getFields();
+    var fields;
+
+    if (behavior == 0) {
+      fields = lfields.filter(function(lfield) {
+        return rfields.indexOf(lfield) !== -1;
+      })
+    }
+    if (behavior == 1) {fields = lfields;}
+    if (behavior == 2) {fields = rfields;}
+    if (behavior == 3) {
+      fields = unique(lfields.concat(rfields));
+    };
+
+    var output = createOutput(fields);
+
+    // Check if any of the fields of the left table are in the final table
+    // To see if missing values need to be filled up
+    var lfillupNeeded = lfields.map(function(field) {
+      return fields.indexOf(field) !== -1;}).reduce(function(a,b) {
+        return a || b;});
+
+    var rfillupNeeded = rfields.map(function(field) {
+      return fields.indexOf(field) !== -1;}).reduce(function(a,b) {
+        return a || b;});
+
+    fields.map(function(field) {
+      if (lfields.indexOf(field) !== -1) {
+        output[field] = output[field].concat(table[field]);
+      } else if (lfillupNeeded) {
+        output[field] = output[field].concat(repeat(empty, rows()));
+      }
+
+      if (rfields.indexOf(field) !== -1) {
+        output[field] = output[field].concat(t.table[field]);
+      } else if (rfillupNeeded) {
+        output[field] = output[field].concat(repeat(empty, rows()));
+      }
+    })
+    return createTable(output);
+  }
 
   return {
     table: table,
@@ -167,6 +236,7 @@ function createTable(table) {
 
     select: select,
     filter: filter,
+    union: union,
 
     as: as,
     is: is,
