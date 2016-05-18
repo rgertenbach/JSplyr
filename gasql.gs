@@ -145,12 +145,29 @@ function createTable(table) {
     return createTable(output);
   }
 
+  function filter(criterion) {
+    var fields = getFields();
+    var output = {};
+
+    fields.map(function(field) {output[field] = [];});
+
+    for (var row in criterion) {
+      if (criterion[row]) {
+        fields.map(function(field) {output[field].push(table[field][row]);});
+      }
+    }
+    return createTable(output);
+  }
+
 
   return {
     table: table,
     createTable: createTable,
     toMatrix: toMatrix,
+
     select: select,
+    filter: filter,
+
     as: as,
     is: is,
     getFields: getFields,
