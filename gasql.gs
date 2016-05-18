@@ -4,9 +4,18 @@ function createTable(table) {
     return Object.keys(object).map(function(key) {return object[key];});
   }
 
+  function repeat(x, n) {
+    var output = [];
+    while (n > 0) {
+      output.push(x);
+      n--;
+    }
+    return output;
+  }
+
   function toMatrix() {
     var output = [[]];
-    var fields = Object.keys(table);
+    var fields = getFields();
     fields.map(function(field) {output[0].push(field);})
     for (var row in table[fields[0]]) {
       output.push(fields.map(function(field) {return table[field][row]}));
@@ -18,11 +27,64 @@ function createTable(table) {
     return {field: field, alias: alias};
   }
 
+  function getFields() {
+    return Object.keys(table);
+  }
+
+  function rows() {
+    return table[getFields()[0]].length;
+  }
+
+  function is(lop, op, rop) {
+    var operations = {
+      "==":  function(l, r) {return l ==  r;},
+      "===": function(l, r) {return l === r;},
+      ">":   function(l, r) {return l >   r;},
+      "<":   function(l, r) {return l <   r;},
+      ">=":  function(l, r) {return l >=  r;},
+      "<=":  function(l, r) {return l <=  r;},
+      "!=":  function(l, r) {return l !=  r;},
+      "!==": function(l, r) {return l !== r;}
+    };
+
+    if (typeof(op) === "function") {
+      operations[op] = op;
+    }
+
+    var fields = getFields();
+    var lopf;
+    var ropf;
+    var output = [];
+    if (fields.indexOf(lop) !== -1) {
+      lopf = table[lop];
+    }
+    if (fields.indexOf(row) !== -1) {
+      ropf = table[rop]
+    }
+    if (lopf === undefined && ropf === undefined) {
+      return repeat(operations[op](lop, rop), rows());
+    }
+    if (lopf === undefined) {
+      lopf = repeat(lop, rows());
+    } else {
+      lopf = table[lop];
+    }
+    if (ropf === undefined) {
+      ropf = repeat(rop, rows());
+    } else {
+      ropf = table[rop];
+    }
+    for (var row in lopf) {
+      output.push(operations[op](lopf[row], ropf[row]));
+    }
+    return output;
+  }
+
   function select() {
     var fields = objectToArray(arguments);
 
     //verify fields exist
-    var tableFields = Object.keys(table);
+    var tableFields = getFields();
     fields.map(function(field) {
       if (["object", "string"].indexOf(typeof(field)) === -1) {
         throw "Wrong argument type";
@@ -61,7 +123,10 @@ function createTable(table) {
     createTable: createTable,
     toMatrix: toMatrix,
     select: select,
-    as: as
+    as: as,
+    is: is,
+    getFields: getFields,
+    rows: rows
   };
 }
 
@@ -87,5 +152,4 @@ function createTableFromMatrix(data) {
   }
 
   return createTable(makeTable());
-
 }
