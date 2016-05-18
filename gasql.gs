@@ -1,11 +1,17 @@
-// TODO:
-//  - Check if 2d table is flat
-//  - Check if Table is non-ragged
-
 function createTable(table) {
   function objectToArray(object) {
     var output = [];
     return Object.keys(object).map(function(key) {return object[key];});
+  }
+
+  function toMatrix() {
+    var output = [[]];
+    var fields = Object.keys(table);
+    fields.map(function(field) {output[0].push(field);})
+    for (var row in table[fields[0]]) {
+      output.push(fields.map(function(field) {return table[field][row]}));
+    }
+    return output;
   }
 
   function as(field, alias) {
@@ -14,7 +20,7 @@ function createTable(table) {
 
   function select() {
     var fields = objectToArray(arguments);
-    
+
     //verify fields exist
     var tableFields = Object.keys(table);
     fields.map(function(field) {
@@ -26,12 +32,12 @@ function createTable(table) {
         if (tableFields.indexOf(field) === -1 && field !== "*") {
           throw field + "is not a field of this table";
         }
-      }  
+      }
 
       if (typeof(field) === "object") {
         if (! field.hasOwnProperty("field")) {
           throw "Wrong type of Object supplied";
-        } 
+        }
         if (tableFields.indexOf(field.field) === -1) {
           throw "Field " + field.field + "not found";
         }
@@ -49,9 +55,11 @@ function createTable(table) {
     return createTable(output);
   }
 
+
   return {
     table: table,
     createTable: createTable,
+    toMatrix: toMatrix,
     select: select,
     as: as
   };
