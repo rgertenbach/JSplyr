@@ -40,8 +40,13 @@ function createTable(table) {
     return output;
   }
 
-  function as(field, alias) {
-    return {field: field, alias: alias};
+  function as(field, alias, fun) {
+    var output = {field: field,
+                  alias: alias};
+    if (typeof(fun) === "function") {
+      output.fun = fun;
+    }
+    return output;
   }
 
   function getFields() {
