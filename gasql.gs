@@ -44,6 +44,11 @@ function createTable(table) {
     return {field: field, alias: alias};
   }
 
+
+  /**
+   * Returns an object that contains a functions its alias and all provided args
+   * The function must be a reduce compatible function
+   */
   function Fun(fun, name) {
     var args = objectToArray(arguments);
     args.splice(0,2);
@@ -257,7 +262,7 @@ function createTable(table) {
   }
 
   function group_by() {
-    var roups = objectToArray(arguments);
+    var groups = objectToArray(arguments);
     fields = getFields();
 
     groups.map(function(arg) {
@@ -302,7 +307,7 @@ function createTable(table) {
         }, this);
       }
     }
-    return nested;
+    return createTable(nested);
   }
 
   return {
@@ -314,6 +319,7 @@ function createTable(table) {
     filter: filter,
     union: union,
     group_by: group_by,
+    aggregate: aggregate,
 
 
     as: As,
