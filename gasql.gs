@@ -524,8 +524,36 @@ function createTable(table) {
       return matches;
     }
 
-    function buildOutputWithMatches(l, r, matches) {
+    function getRow(table, row, fields) {
+      var fields = fields || table.getFields();
+      var output = fields.map(function(field) {
+        return table.table[field][row];
+      });
+      return output;
+    }
 
+    function buildOutputWithMatches(l, r, matches, nonMatches) {
+      nonMatches = nonMatches || false;
+      var output  = createOutput(oFields);
+
+      for (var lRow in matches) {
+        if (matches[lRow].length > 0 && !nonMatches) {
+          for (var match in matches[lRow]) {
+            var leftData = getRow(l, lRow, lFields);
+            var rightData = getRow(r, matches[lRow][match], rFields);
+            for (var field in oFields) {
+              output[oFields[field]].push(leftData.concat(rightData)[field]);
+            }
+          }
+        } else if(matches[lRow].length === 0 && nonMatches) {
+          var leftData = getRow(l, lRow, lFields);
+          var rightData = repeat(empty, oFields.length);
+          for (var field in oFields) {
+            output[oFields[field]].push(leftData.concat(rightData)[field]);
+          }
+        }
+      }
+      return output;
     }
 
     if (["inner", "left", "outer"].indexOf(method) !== -1) {
@@ -536,8 +564,10 @@ function createTable(table) {
       var rMatches = matchTables(right, this, rKeys, lKeys);
     }
 
-    console.log(lMatches)
-    console.log(rMatches)
+    //console.log(buildOutputWithMatches(this, right, lMatches, true))
+
+    //console.log(lMatches)
+    //console.log(rMatches)
   }
 
   return {
