@@ -28,6 +28,9 @@ function createTable(table) {
    * @return {Array} An array of size n filled with copies of x.
    */
   function repeat(x, n) {
+    if (!(typeof(n) === "number" && n >= 0 && n % 1 === 0)) {
+      throw "n must be an integer greater or than equal to 0"
+    }
     var output = [];
     while (n > 0) {
       output.push(x);
@@ -43,6 +46,7 @@ function createTable(table) {
    * @return {Array} An array with unique values.
    */
   function unique(a) {
+    if(!a.isArray()) {throw "Argument must be an array!";}
     var output = [];
     a.map(function(e) {if (output.indexOf(e) === -1) {output.push(e);}});
     return output;
@@ -55,6 +59,7 @@ function createTable(table) {
    * @return {Object} The object with the field names as keys and empty arrays.
    */
   function createOutput(fields) {
+    if(!fields.isArray()) {throw "Argument must be an array!";}
     var output = {};
     fields.map(function (field) {
       if (typeof(field) == "string") {
@@ -98,12 +103,18 @@ function createTable(table) {
 
   /**
    * Allows for scalar functions within records of a table.
+   * Note that while this is a scalar application of a function it is possible
+   * to use it as an aggregation when using group_by().
    *
    * @param {function} fun The function to be evaluated per row.
    * @param {string} alias The alias of the function value.
    * @param {...} ... Any arguments passed to the function.
    */
   function Fun(fun, alias) {
+    if (typeof(fun) !== "function") {
+      throw "First argument must be a function!";
+    }
+
     var args = objectToArray(arguments);
     args.splice(0,2);
     return {fun: fun, alias: alias, args: args};
@@ -111,11 +122,15 @@ function createTable(table) {
 
   /**
    * Applies a Fun object to a table
-   * 
+   *
    * @param {Fun} fun A Fun object.
    * @return {Array} Returns an array of the results, one element per row.
    */
   function applyScalar(fun) {
+    if (!(fun.hasOwnProperty("fun") && fun.hasOwnProperty("alias"))) {
+      throw "Must provide a Fun Object!";
+    }
+
     var fields = getFields();
     var f = fun.fun;
     var args = fun.args;
@@ -152,8 +167,12 @@ function createTable(table) {
    *
    * @param {Number} i The row number to be retrieved (0-based).
    * @return {Array} An array of the values in the i-th row.
-   */ 
+   */
   function getRow(i) {
+    if (!(i % 1 !== 0 && i >= 0) {
+      throw "row must be an integer greatern than or equal to 0";
+    }
+
     var fields = getFields();
     return fields.map(function(field) {return table[field][i];});
   }
@@ -162,7 +181,7 @@ function createTable(table) {
    * The number of columns in the table
    *
    * @return {number} The number of columns in the table
-   */ 
+   */
   function cols() {
     return getFields().length;
   }
@@ -171,7 +190,7 @@ function createTable(table) {
    * The number of rows in the table
    *
    * @return {number} The number of rows in the table.
-   */ 
+   */
   function rows() {
     return table[getFields()[0]].length;
   }
@@ -234,7 +253,7 @@ function createTable(table) {
 
   /**
    * Logical and applied to a list of arrays.
-   * 
+   *
    * k Arrays of length n will return an array of length n where each row is the
    * logical and of row i of n for each column j of k.
    *
@@ -253,7 +272,7 @@ function createTable(table) {
 
   /**
    * Logical or applied to a list of arrays.
-   * 
+   *
    * k Arrays of length n will return an array of length n where each row is the
    * logical or of row i of n for each column j of k.
    *
@@ -269,13 +288,13 @@ function createTable(table) {
     }
     return output;
   }
-  
+
   /**
    * The negation of an array of boolean values.
    *
    * @param {Array} x The array to be negated.
    * @return {Array} an array of the negated values of x.
-   */ 
+   */
   function not(x) {
     return x.map(function(x) {return !x;});
   }
@@ -283,11 +302,11 @@ function createTable(table) {
   /**
    * Selects a list of fields from the existing table.
    *
-   * Takes either field names, As Aliases or Fun Functions. 
+   * Takes either field names, As Aliases or Fun Functions.
    *
    * @param {...} ... A list of arguments.
    * @return {createTable} An instance of a table with the selected fields.
-   */ 
+   */
   function select() {
     var fields = objectToArray(arguments);
 
@@ -480,8 +499,8 @@ function createTable(table) {
 /**
  * Creates a table from a two dimensional array.
  *
- * The 2d array is an array of arrays. 
- * Each element of the outer array is a row. 
+ * The 2d array is an array of arrays.
+ * Each element of the outer array is a row.
  * Each element of the inner arrays is a column in that row.
  *
  * @param {Array} data The 2d array to be converted into a table.
