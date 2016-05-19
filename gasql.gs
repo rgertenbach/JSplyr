@@ -46,7 +46,7 @@ function createTable(table) {
    * @return {Array} An array with unique values.
    */
   function unique(a) {
-    if(!a.isArray()) {throw "Argument must be an array!";}
+    if(!Array.isArray(a)) {throw "Argument must be an array!";}
     var output = [];
     a.map(function(e) {if (output.indexOf(e) === -1) {output.push(e);}});
     return output;
@@ -59,7 +59,7 @@ function createTable(table) {
    * @return {Object} The object with the field names as keys and empty arrays.
    */
   function createOutput(fields) {
-    if(!fields.isArray()) {throw "Argument must be an array!";}
+    if(!Array.isArray(fields)) {throw "Argument must be an array!";}
     var output = {};
     fields.map(function (field) {
       if (typeof(field) == "string") {
@@ -169,7 +169,7 @@ function createTable(table) {
    * @return {Array} An array of the values in the i-th row.
    */
   function getRow(i) {
-    if (!(i % 1 !== 0 && i >= 0) {
+    if (!(i % 1 !== 0 && i >= 0)) {
       throw "row must be an integer greatern than or equal to 0";
     }
 
@@ -474,6 +474,72 @@ function createTable(table) {
     return createTable(nested);
   }
 
+  function join(right, method, lKeys, rKeys, empty) {
+    var allowed_methods = ["inner", "left", "right", "outer", "cross"]
+    method = method || "inner";
+
+    if (!right.hasOwnProperty("table")) {throw "First argument must be table!";}
+    if (allowed_methods.indexOf(method) === -1) {
+      throw "Second argument must be one of" + allowed_methods
+    }
+    if (method !== "cross" && lKeys.length !== rKeys.length) {
+      throw "Join key lists must have same length!";
+    }
+
+    var lFields = getFields();
+    var rFields = right.getFields();
+
+    var oFields = lFields.map(function(f) {return "l." + f;}).concat(
+                  rFields.map(function(f) {return "r." + f;}));
+
+    function fillFields(table, fields, row, prefix) {
+      prefix = prefix || "";
+      fields.map(function(field) {
+        output[prefix + field].push(table[field][row]);
+      });
+    }
+
+    function matchTables(l, r, lKeys, rKeys) {
+      var matches = [];
+      var lFields = l.getFields();
+      var rFields = r.getFields();
+
+      function rowsMatch() {
+        for (var key in lKeys) {
+          if (l.table[lKeys[key]][lRow] !== r.table[rKeys[key]][rRow]) {
+            return false;
+          }
+        }
+        return true;
+      }
+
+      for (var lRow in l.table[lFields[0]]) {
+        matches.push([]);
+        for (var rRow in r.table[rKeys[0]]) {
+          if (rowsMatch()) {
+            matches[lRow].push(rRow);
+          }
+        }
+      }
+      return matches;
+    }
+
+    function buildOutputWithMatches(l, r, matches) {
+
+    }
+
+    if (["inner", "left", "outer"].indexOf(method) !== -1) {
+      var lMatches = matchTables(this, right, lKeys, rKeys);
+
+    }
+    if (["right", "outer"].indexOf(method) !== -1) {
+      var rMatches = matchTables(right, this, rKeys, lKeys);
+    }
+
+    console.log(lMatches)
+    console.log(rMatches)
+  }
+
   return {
     table: table,
     createTable: createTable,
@@ -483,6 +549,7 @@ function createTable(table) {
     filter: filter,
     union: union,
     group_by: group_by,
+    join: join,
 
     as: As,
     fun: Fun,
