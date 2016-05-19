@@ -44,7 +44,6 @@ function createTable(table) {
     return {field: field, alias: alias};
   }
 
-
   /**
    * Returns an object that contains a functions its alias and all provided args
    * The function must be a reduce compatible function
@@ -319,8 +318,6 @@ function createTable(table) {
     filter: filter,
     union: union,
     group_by: group_by,
-    aggregate: aggregate,
-
 
     as: As,
     fun: Fun,
