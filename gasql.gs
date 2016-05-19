@@ -532,9 +532,17 @@ function createTable(table) {
       return output;
     }
 
-    function buildOutputWithMatches(l, r, matches, nonMatches) {
+    function buildOutputWithMatches(l, r, matches, nonMatches, reverse) {
       nonMatches = nonMatches || false;
+      reverse = reverse || false;
       var output  = createOutput(oFields);
+      var lFields = l.getFields();
+      var rFields = r.getFields();
+      if (reverse) {
+        oFields = lFields.map(function(f) {return "r." + f;}).concat(
+          rFields.map(function(f) {return "l." + f;})
+        );
+      }
 
       for (var lRow in matches) {
         if (matches[lRow].length > 0 && !nonMatches) {
@@ -563,11 +571,29 @@ function createTable(table) {
     if (["right", "outer"].indexOf(method) !== -1) {
       var rMatches = matchTables(right, this, rKeys, lKeys);
     }
+    if (["cross"].indexOf(method) !== -1) {
+      var lMatches = [];
+      for (var lRow = 0; lRow < rows(); lRow++) {
+        lMatches.push([]);
+        for (var rRow = 0; rRow < right.rows(); rRow++) {
+          lMatches[lRow].push(rRow);
+        }
+      }
+    }
 
-    //console.log(buildOutputWithMatches(this, right, lMatches, true))
+    // Inner matches
+    var results = createTable(buildOutputWithMatches(this, right, lMatches));
 
-    //console.log(lMatches)
-    //console.log(rMatches)
+    if (["left", "outer", "cross"].indexOf(method) !== -1) {
+      var b = createTable(buildOutputWithMatches(this, right, lMatches, true));
+      results = results.union(b);
+    }
+
+    if (["right", "outer"].indexOf(method) !== -1) {
+      var b = createTable(buildOutputWithMatches(right, this, lMatches, true, true));
+      results = results.union(b);
+    }
+    return results;
   }
 
   return {
