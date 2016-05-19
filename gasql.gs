@@ -44,6 +44,10 @@ function createTable(table) {
     return {field: field, alias: alias};
   }
 
+  /**
+   * Returns an object that contains a functions its alias and all provided args
+   * The function must be a reduce compatible function
+   */
   function Fun(fun, name) {
     var args = objectToArray(arguments);
     args.splice(0,2);
@@ -75,6 +79,11 @@ function createTable(table) {
 
   function getFields() {
     return Object.keys(table);
+  }
+
+  function getRow(i) {
+    var fields = getFields();
+    return fields.map(function(field) {return table[field][i];});
   }
 
   function cols() {
@@ -251,6 +260,55 @@ function createTable(table) {
     return createTable(output);
   }
 
+  function group_by() {
+    var groups = objectToArray(arguments);
+    fields = getFields();
+
+    groups.map(function(arg) {
+      if (fields.indexOf(arg) === -1) {throw arg + "not found!";}
+    })
+
+    var fields = getFields();
+    var currentRow;
+    var checkRow;
+    var nested = createOutput(fields);
+
+    function getRow(table, row, target) {
+      var fields = Object.keys(table);
+      fields = fields.filter(function(f) {return target.indexOf(f) !== -1;});
+      return fields.map(function(field) {
+        return table[field][row];
+      });
+    }
+
+    // Create a nested version of the table
+    for (var iRow in table[fields[0]]) {
+      currentRow = getRow(table, iRow, groups);
+      var found = false;
+      for (var oRow in nested[fields[0]]) {
+        checkRow = getRow(nested, oRow, groups);
+        if (JSON.stringify(currentRow) == JSON.stringify(checkRow)) {
+          found = oRow;
+          break;
+        }
+      }
+      if (found) {
+        fields.map(function(field) {if (groups.indexOf(field) === -1) {
+          nested[field][oRow].push(table[field][iRow]);
+        }}, this)
+      } else {
+        fields.map(function(field) { // emove map to not have gloal environment
+          if (groups.indexOf(field) === -1) {
+            nested[field].push([table[field][iRow]]);
+          } else {
+            nested[field].push(table[field][iRow]);
+          }
+        }, this);
+      }
+    }
+    return createTable(nested);
+  }
+
   return {
     table: table,
     createTable: createTable,
@@ -259,6 +317,7 @@ function createTable(table) {
     select: select,
     filter: filter,
     union: union,
+    group_by: group_by,
 
     as: As,
     fun: Fun,
