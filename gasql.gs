@@ -1,9 +1,32 @@
+/**
+ * Creates a table.
+ *
+ * The table has a table attribute with is an object with field names as keys.
+ * The values are arrays containing the rows of each column.
+ *
+ * @param {Object} table The object that will be the table propertt.
+ * @returns {Object} The table with methods to work with instances of itself.
+ */
 function createTable(table) {
+
+  /**
+   * Extracts element out of an Object into an array
+   *
+   * @param {Object} object The object to be parsed
+   * @return {Array} The Values of the object in an array.
+   */
   function objectToArray(object) {
     var output = [];
     return Object.keys(object).map(function(key) {return object[key];});
   }
 
+  /**
+   * Repeats a value n times
+   *
+   * @param {Object} x The object to be repeated.
+   * @param {number} n The number of repetitions.
+   * @return {Array} An array of size n filled with copies of x.
+   */
   function repeat(x, n) {
     var output = [];
     while (n > 0) {
@@ -13,12 +36,24 @@ function createTable(table) {
     return output;
   }
 
+  /**
+   * Returns unique entries from an array.
+   *
+   * @param {Array} a The array to be deduped.
+   * @return {Array} An array with unique values.
+   */
   function unique(a) {
     var output = [];
     a.map(function(e) {if (output.indexOf(e) === -1) {output.push(e);}});
     return output;
   }
 
+  /**
+   * Creates an object with field names as keys and empty arrays as values.
+   *
+   * @param {Array} fields An array of field names.
+   * @return {Object} The object with the field names as keys and empty arrays.
+   */
   function createOutput(fields) {
     var output = {};
     fields.map(function (field) {
@@ -30,6 +65,15 @@ function createTable(table) {
     return output;
   }
 
+  /**
+   * Creates a two dimensional array from the table.
+   *
+   * The table part gets returned as an array of equal length arrays.
+   * Each array is a row and each element in the sub arrays a column within it.
+   * The keys of the table object for into the first row.
+   *
+   * @returns {Array} An array of arrays containing the table.
+   */
   function toMatrix() {
     var output = [[]];
     var fields = getFields();
@@ -40,20 +84,37 @@ function createTable(table) {
     return output;
   }
 
+  /**
+   * An alias object that can be used instead of field names in selections.
+   *
+   * @param {Object} field The field of the table to be used.
+   * @param {string} alias The Name the field will have in the selection.
+   *
+   * @return {Object} Returns a field-alias object.
+   */
   function As(field, alias) {
     return {field: field, alias: alias};
   }
 
   /**
-   * Returns an object that contains a functions its alias and all provided args
-   * The function must be a reduce compatible function
+   * Allows for scalar functions within records of a table.
+   *
+   * @param {function} fun The function to be evaluated per row.
+   * @param {string} alias The alias of the function value.
+   * @param {...} ... Any arguments passed to the function.
    */
-  function Fun(fun, name) {
+  function Fun(fun, alias) {
     var args = objectToArray(arguments);
     args.splice(0,2);
-    return {fun: fun, alias: name, args: args};
+    return {fun: fun, alias: alias, args: args};
   }
 
+  /**
+   * Applies a Fun object to a table
+   * 
+   * @param {Fun} fun A Fun object.
+   * @return {Array} Returns an array of the results, one element per row.
+   */
   function applyScalar(fun) {
     var fields = getFields();
     var f = fun.fun;
@@ -77,23 +138,55 @@ function createTable(table) {
     return output;
   }
 
+  /**
+   * Field names of the Table
+   *
+   * @return {Array} An array of the field names of the table.
+   */
   function getFields() {
     return Object.keys(table);
   }
 
+  /**
+   * The i-th row of a table
+   *
+   * @param {Number} i The row number to be retrieved (0-based).
+   * @return {Array} An array of the values in the i-th row.
+   */ 
   function getRow(i) {
     var fields = getFields();
     return fields.map(function(field) {return table[field][i];});
   }
 
+  /**
+   * The number of columns in the table
+   *
+   * @return {number} The number of columns in the table
+   */ 
   function cols() {
     return getFields().length;
   }
 
+  /**
+   * The number of rows in the table
+   *
+   * @return {number} The number of rows in the table.
+   */ 
   function rows() {
     return table[getFields()[0]].length;
   }
 
+  /**
+   * Whether rows fulfil a criterion or not
+   *
+   * The function accepts either a string of a comparison such as == or > or
+   * a function. Due to the way JS evaluates truthiness any return value is ok.
+   *
+   * @param {Object} lop The left operand. Can be a field name or a literal.
+   * @param {Object} op The operand.
+   * @param {Object} rop The right operand. Can be a field name or a literal.
+   * @return {Array} An array of booleans or values that will be used as such.
+   */
   function is(lop, op, rop) {
     var operations = {
       "==":  function(l, r) {return l ==  r;},
@@ -139,6 +232,15 @@ function createTable(table) {
     return output;
   }
 
+  /**
+   * Logical and applied to a list of arrays.
+   * 
+   * k Arrays of length n will return an array of length n where each row is the
+   * logical and of row i of n for each column j of k.
+   *
+   * @param {Array} ... 0 or more arrays.
+   * @return {Array} The resulting vector of true/false values.
+   */
   function and() {
     var arguments = objectToArray(arguments);
     var output = [];
@@ -149,6 +251,15 @@ function createTable(table) {
     return output;
   }
 
+  /**
+   * Logical or applied to a list of arrays.
+   * 
+   * k Arrays of length n will return an array of length n where each row is the
+   * logical or of row i of n for each column j of k.
+   *
+   * @param {Array} ... 0 or more arrays.
+   * @return {Array} The resulting vector of true/false values.
+   */
   function or() {
     var arguments = objectToArray(arguments);
     var output = [];
@@ -158,11 +269,25 @@ function createTable(table) {
     }
     return output;
   }
-
+  
+  /**
+   * The negation of an array of boolean values.
+   *
+   * @param {Array} x The array to be negated.
+   * @return {Array} an array of the negated values of x.
+   */ 
   function not(x) {
     return x.map(function(x) {return !x;});
   }
 
+  /**
+   * Selects a list of fields from the existing table.
+   *
+   * Takes either field names, As Aliases or Fun Functions. 
+   *
+   * @param {...} ... A list of arguments.
+   * @return {createTable} An instance of a table with the selected fields.
+   */ 
   function select() {
     var fields = objectToArray(arguments);
 
@@ -193,6 +318,12 @@ function createTable(table) {
     return createTable(output);
   }
 
+  /**
+   * Filters a table's rows.
+   *
+   * @param {Array} criterion An array of boolean values, one for each row.
+   * @return {createTable} The resulting filtered table.
+   */
   function filter(criterion) {
     var fields = getFields();
     var output = {};
@@ -208,11 +339,18 @@ function createTable(table) {
   }
 
   /**
-   *  Behavior:
+   * Creates the union all of to tables.
+   *
+   * Behavior of behavior:
    *  - undefined or 0 uses only common columns
    *  - 1 uses only left columns
    *  - 2 uses right columns
    *  - 3 uses all columns
+   *
+   * @param {createTable} t The table to be unioned with.
+   * @param {number} behavior Which columns are to be selected.
+   * @param {Object} empty The value missing columns shall be filled with.
+   * @return {createTable} The union of two tables.
    */
   function union(t, behavior, empty) {
     behavior = behavior || 0;
@@ -260,6 +398,14 @@ function createTable(table) {
     return createTable(output);
   }
 
+  /**
+   * Groups a table by a list of field names by nesting non grouping fields.
+   *
+   * The non grouping fields will be nested in arrays.
+   *
+   * @param {String} ... The field names to be grouped by.
+   * @return {createTable} The nested table.
+   */
   function group_by() {
     var groups = objectToArray(arguments);
     fields = getFields();
@@ -331,6 +477,16 @@ function createTable(table) {
 }
 
 
+/**
+ * Creates a table from a two dimensional array.
+ *
+ * The 2d array is an array of arrays. 
+ * Each element of the outer array is a row. 
+ * Each element of the inner arrays is a column in that row.
+ *
+ * @param {Array} data The 2d array to be converted into a table.
+ * @return {createTable} The input as a table instance.
+ */
 function createTableFromMatrix(data) {
   function verify2dArray() {
     var errorMessage = "Data is not a 2 dimensional Array"
