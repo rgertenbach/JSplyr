@@ -59,7 +59,7 @@ function createTable(table) {
   function unique(a) {
     if(!Array.isArray(a)) {throw "Argument must be an array!";}
     var output = [];
-    a.map(function(e) {if (output.indexOf(e) === -1) {output.push(e);}});
+    a.map(function(e) {if (!isIn(e, output)) {output.push(e);}});
     return output;
   }
 
@@ -146,7 +146,7 @@ function createTable(table) {
     var r = rows();
 
     var args = fun.args.map(function(arg) {
-      if (fields.indexOf(arg) === -1) {
+      if (!isIn(arg, fields)) {
         return repeat(arg, r);
       } else {
         return table[arg];
@@ -234,10 +234,10 @@ function createTable(table) {
     var lopf;
     var ropf;
     var output = [];
-    if (fields.indexOf(lop) !== -1) {
+    if (isIn(lop, fields)) {
       lopf = table[lop];
     }
-    if (fields.indexOf(rop) !== -1) {
+    if (isIn(rop, fields)) {
       ropf = table[rop]
     }
     if (lopf === undefined && ropf === undefined) {
@@ -321,12 +321,12 @@ function createTable(table) {
     //verify fields exist
     var tableFields = getFields();
     fields.map(function(field) {
-      if (["object", "string"].indexOf(typeof(field)) === -1) {
+      if (isIn(field, ["object", "string"])) {
         throw "Wrong argument type";
       }
 
       if (typeof(field) === "string") {
-        if (tableFields.indexOf(field) === -1 && field !== "*") {
+        if (!isIn(field, tableFields) && field !== "*") {
           throw field + "is not a field of this table";
         }
       }
@@ -387,8 +387,8 @@ function createTable(table) {
     var fields;
 
     if (behavior == 0) {
-      fields = lfields.filter(function(lfield) {
-        return rfields.indexOf(lfield) !== -1;
+      fields = lfields.filter(function(lField) {
+        return isIn(lField, rfields);
       })
     }
     if (behavior == 1) {fields = lfields;}
@@ -402,21 +402,21 @@ function createTable(table) {
     // Check if any of the fields of the left table are in the final table
     // To see if missing values need to be filled up
     var lfillupNeeded = lfields.map(function(field) {
-      return fields.indexOf(field) !== -1;}).reduce(function(a,b) {
+      return isIn(field, fields);}).reduce(function(a,b) {
         return a || b;});
 
     var rfillupNeeded = rfields.map(function(field) {
-      return fields.indexOf(field) !== -1;}).reduce(function(a,b) {
+      return isIn(field, fields);}).reduce(function(a,b) {
         return a || b;});
 
     fields.map(function(field) {
-      if (lfields.indexOf(field) !== -1) {
+      if (isIn(field, lfields)) {
         output[field] = output[field].concat(table[field]);
       } else if (lfillupNeeded) {
         output[field] = output[field].concat(repeat(empty, rows()));
       }
 
-      if (rfields.indexOf(field) !== -1) {
+      if (isIn(field, rfields)) {
         output[field] = output[field].concat(t.table[field]);
       } else if (rfillupNeeded) {
         output[field] = output[field].concat(repeat(empty, rows()));
@@ -438,7 +438,7 @@ function createTable(table) {
     fields = getFields();
 
     groups.map(function(arg) {
-      if (fields.indexOf(arg) === -1) {throw arg + "not found!";}
+      if (!isIn(arg, fields)) {throw arg + "not found!";}
     })
 
     var fields = getFields();
@@ -448,7 +448,7 @@ function createTable(table) {
 
     function getRow(table, row, target) {
       var fields = Object.keys(table);
-      fields = fields.filter(function(f) {return target.indexOf(f) !== -1;});
+      fields = fields.filter(function(f) {return isIn(f, target);});
       return fields.map(function(field) {
         return table[field][row];
       });
@@ -466,17 +466,17 @@ function createTable(table) {
         }
       }
       if (found) {
-        fields.map(function(field) {if (groups.indexOf(field) === -1) {
+        fields.map(function(field) {if (!isIn(field, groups)) {
           nested[field][oRow].push(table[field][iRow]);
-        }}, this)
+        }})
       } else {
         fields.map(function(field) { // emove map to not have gloal environment
-          if (groups.indexOf(field) === -1) {
+          if (!isIn(field, groups)) {
             nested[field].push([table[field][iRow]]);
           } else {
             nested[field].push(table[field][iRow]);
           }
-        }, this);
+        });
       }
     }
     return createTable(nested);
@@ -507,7 +507,7 @@ function createTable(table) {
     method = method || "inner";
 
     if (!right.hasOwnProperty("table")) {throw "First argument must be table!";}
-    if (allowed_methods.indexOf(method) === -1) {
+    if (!isIn(method, allowed_methods)) {
       throw "Second argument must be one of" + allowed_methods
     }
     if (typeof(lKeys) === "string") {lKeys = [lKeys];}
@@ -523,7 +523,7 @@ function createTable(table) {
                   rFields.map(function(f) {return "r." + f;}));
 
     function methodIn(methods) {
-      return methods.indexOf(method) !== -1;
+      return isIn(method, methods);
     }
 
     function fillFields(table, fields, row, prefix) {
