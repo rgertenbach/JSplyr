@@ -189,7 +189,11 @@ JSplyr.createTable = function(table) {
    * @param {Object} rop The right operand. Can be a field name or a literal.
    * @return {Array} An array of booleans or values that will be used as such.
    */
-  function is(lop, op, rop) {
+  function is(comp) {
+    var lop = comp.lop;
+    var op = comp.op;
+    var rop = comp.rop;
+
     var operations = {
       "==":  function(l, r) {return l ==  r;},
       "===": function(l, r) {return l === r;},
@@ -610,6 +614,13 @@ JSplyr.createTable = function(table) {
   }
 
 
+  function where(expr) {
+    if (expr.hasOwnProperty("lop")) {
+      return this.filter(this.is.apply(this, expr));
+    } else {
+      return this.filter(expr);
+    }
+  }
 
   return {
     table: table,
@@ -624,6 +635,7 @@ JSplyr.createTable = function(table) {
     join: join,
     flatten: flatten,
     limit: limit,
+    where: where,
 
     is: is
   };
@@ -703,7 +715,7 @@ JSplyr.fun = function(fun, alias) {
  * @param {Array} ... 0 or more arrays.
  * @return {Array} The resulting vector of true/false values.
  */
-JSplyr.and = function() {
+JSplyr.arrayAnd = function() {
   var arguments = Jsplyr.objectToArray(arguments);
   var output = [];
 
@@ -723,7 +735,7 @@ JSplyr.and = function() {
  * @param {Array} ... 0 or more arrays.
  * @return {Array} The resulting vector of true/false values.
  */
-JSplyr.or = function() {
+JSplyr.arrayOr = function() {
   var arguments = JSplyr.objectToArray(arguments);
   var output = [];
 
@@ -740,7 +752,7 @@ JSplyr.or = function() {
  * @param {Array} x The array to be negated.
  * @return {Array} an array of the negated values of x.
  */
-JSplyr.not = function() {
+JSplyr.arrayNot = function() {
   return x.map(function(x) {return !x;});
 };
 
@@ -755,3 +767,15 @@ JSplyr.objectToArray = function(object) {
   var output = [];
   return Object.keys(object).map(function(key) {return object[key];});
 };
+
+/**
+ * Return a comparison object
+ *
+ * @param {Object} lop The left operand. Can be a field name or a literal.
+ * @param {Object} op The operand.
+ * @param {Object} rop The right operand. Can be a field name or a literal.
+ * @return {Object} An object containing the three arguments.
+ */
+JSplyr.comp = function(lop, op, rop) {
+  return {lop: lop, op: op, rop: rop};
+}
