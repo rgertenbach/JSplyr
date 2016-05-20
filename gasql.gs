@@ -680,7 +680,13 @@ function createTable(table) {
     }
     return results;
   }
-
+  /**
+   * Limits the output starting at a given offset or the first row.
+   *
+   * @param {Number} limit The number of rows.
+   * @param {Number} offset The number of rows from the first at which to start.
+   * @return {createObject} the truncated table.
+   */
   function limit(limit, offset) {
     offset = offset || 0;
     var fields = getFields();
