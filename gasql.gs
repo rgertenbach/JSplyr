@@ -145,18 +145,17 @@ function createTable(table) {
     var fields = getFields();
     var r = rows();
 
-    var args = args.map(function(arg) {
-      if (fun.fields.indexOf(arg) === -1) {
+    var args = fun.args.map(function(arg) {
+      if (fields.indexOf(arg) === -1) {
         return repeat(arg, r);
       } else {
         return table[arg];
       }
     });
-
     var output = [];
     var currentArgs;
     for (var row = 0; row < r; row++) {
-      currentArgs = fun.args.map(function(arg) {return arg[row];});
+      currentArgs = args.map(function(arg) {return arg[row];});
       output.push(fun.fun.apply(this, currentArgs));
     }
     return output;
