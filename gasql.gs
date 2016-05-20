@@ -40,6 +40,22 @@ function createTable(table) {
   }
 
   /**
+   * Recursively checks if two arrays are identical
+   */
+  function equalArrays(a1, a2) {
+    if (!(Array.isArray(a1) && Array.isArray(a2))) {return false;}
+    if (a1.length !== a2.length) {return false;}
+    for (var i in a1) {
+      if (Array.isArray(a1[i])) {
+        if (!equalArrays(a1[i], a2[i])) {return false;}
+      } else {
+        if (a1[i] !== a2[i]) {return false;}
+      }
+    }
+    return true;
+  }
+
+  /**
    * Whether or not x is in array y
    *
    * @param {Object} x The object to be looked for
@@ -441,7 +457,6 @@ function createTable(table) {
 
     var fields = getFields();
     var currentRow;
-    var checkRow;
     var nested = createOutput(fields);
 
     function getRow(table, row, target) {
@@ -452,30 +467,32 @@ function createTable(table) {
       });
     }
 
+    function findMatchingRow(currentRow) {
+      for (var oRow in nested[fields[0]]) {
+        var checkRow = getRow(nested, oRow, groups);
+        if (equalArrays(currentRow, checkRow)) {
+          return oRow;
+        }
+      }
+      return -1
+    }
+
+    function appendRow(row) {
+      fields.map(function(field) {
+        var cell = table[field][iRow];
+        if (found !== -1 && !isIn(field, groups)) {
+          nested[field][found].push(cell);
+        } else if (found === -1) {
+          nested[field].push(isIn(field, groups) ? cell : [cell]);
+        }
+      });
+    }
+
     // Create a nested version of the table
     for (var iRow in table[fields[0]]) {
       currentRow = getRow(table, iRow, groups);
-      var found = false;
-      for (var oRow in nested[fields[0]]) {
-        checkRow = getRow(nested, oRow, groups);
-        if (JSON.stringify(currentRow) == JSON.stringify(checkRow)) {
-          found = oRow;
-          break;
-        }
-      }
-      if (found) {
-        fields.map(function(field) {if (!isIn(field, groups)) {
-          nested[field][oRow].push(table[field][iRow]);
-        }})
-      } else {
-        fields.map(function(field) { // emove map to not have gloal environment
-          if (!isIn(field, groups)) {
-            nested[field].push([table[field][iRow]]);
-          } else {
-            nested[field].push(table[field][iRow]);
-          }
-        });
-      }
+      var found = findMatchingRow(currentRow);
+      appendRow(found);
     }
     return createTable(nested);
   }
