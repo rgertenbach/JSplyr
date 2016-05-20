@@ -498,6 +498,38 @@ function createTable(table) {
   }
 
   /**
+   * flatten unnests an array.
+   *
+   * @param {string} field The nested field to be unnested.
+   * @return {createTable} The flattened table.
+   */
+  function flatten(field) {
+    var fields = getFields();
+
+    if (!isIn(field, fields)) {throw field + " is not a valid field name!";}
+    var column = table[field];
+    if(!Array.isArray(column[0])) {throw field + " is not a nested field!";}
+    var output = createOutput(fields);
+
+    function appendRow(row, element) {
+      fields.map(function(f) {
+        if (f === field) {
+          output[f].push(column[row][element]);
+        } else {
+          output[f].push(table[f][row]);
+        }
+      })
+    }
+
+    for (var row in column) {
+      for (var element in column[row]) {
+        appendRow(row, element);
+      }
+    }
+    return createTable(output);
+  }
+
+  /**
    * Joins two tables with one another
    *
    * Legal join strategies are:
@@ -659,6 +691,7 @@ function createTable(table) {
     union: union,
     group_by: group_by,
     join: join,
+    flatten: flatten,
 
     as: As,
     fun: Fun,
