@@ -1,3 +1,5 @@
+JSplyr = Object.create(null);
+
 /**
  * Creates a table.
  *
@@ -7,7 +9,7 @@
  * @param {Object} table The object that will be the table propertt.
  * @returns {Object} The table with methods to work with instances of itself.
  */
-function createTable(table) {
+JSplyr.createTable = function(table) {
 
   /**
    * Extracts element out of an Object into an array
@@ -114,37 +116,6 @@ function createTable(table) {
       output.push(fields.map(function(field) {return table[field][row]}));
     }
     return output;
-  }
-
-  /**
-   * An alias object that can be used instead of field names in selections.
-   *
-   * @param {Object} field The field of the table to be used.
-   * @param {string} alias The Name the field will have in the selection.
-   *
-   * @return {Object} Returns a field-alias object.
-   */
-  function As(field, alias) {
-    return {field: field, alias: alias};
-  }
-
-  /**
-   * Allows for scalar functions within records of a table.
-   * Note that while this is a scalar application of a function it is possible
-   * to use it as an aggregation when using group_by().
-   *
-   * @param {function} fun The function to be evaluated per row.
-   * @param {string} alias The alias of the function value.
-   * @param {...} ... Any arguments passed to the function.
-   */
-  function Fun(fun, alias) {
-    if (typeof(fun) !== "function") {
-      throw "First argument must be a function!";
-    }
-
-    var args = objectToArray(arguments);
-    args.splice(0,2);
-    return {fun: fun, alias: alias, args: args};
   }
 
   /**
@@ -276,54 +247,6 @@ function createTable(table) {
   }
 
   /**
-   * Logical and applied to a list of arrays.
-   *
-   * k Arrays of length n will return an array of length n where each row is the
-   * logical and of row i of n for each column j of k.
-   *
-   * @param {Array} ... 0 or more arrays.
-   * @return {Array} The resulting vector of true/false values.
-   */
-  function and() {
-    var arguments = objectToArray(arguments);
-    var output = [];
-
-    for (var row in arguments[0]) {
-      output.push(arguments.reduce(function(a,b) {return a[row] && b[row];}));
-    }
-    return output;
-  }
-
-  /**
-   * Logical or applied to a list of arrays.
-   *
-   * k Arrays of length n will return an array of length n where each row is the
-   * logical or of row i of n for each column j of k.
-   *
-   * @param {Array} ... 0 or more arrays.
-   * @return {Array} The resulting vector of true/false values.
-   */
-  function or() {
-    var arguments = objectToArray(arguments);
-    var output = [];
-
-    for (var row in arguments[0]) {
-      output.push(arguments.reduce(function(a,b) {return a[row] || b[row];}));
-    }
-    return output;
-  }
-
-  /**
-   * The negation of an array of boolean values.
-   *
-   * @param {Array} x The array to be negated.
-   * @return {Array} an array of the negated values of x.
-   */
-  function not(x) {
-    return x.map(function(x) {return !x;});
-  }
-
-  /**
    * Selects a list of fields from the existing table.
    *
    * Takes either field names, As Aliases or Fun Functions.
@@ -358,7 +281,7 @@ function createTable(table) {
       output[field.alias] = table[field.field];
     }
     });
-    return createTable(output);
+    return JSplyr.createTable(output);
   }
 
   /**
@@ -378,7 +301,7 @@ function createTable(table) {
         fields.map(function(field) {output[field].push(table[field][row]);});
       }
     }
-    return createTable(output);
+    return JSplyr.createTable(output);
   }
 
   /**
@@ -436,7 +359,7 @@ function createTable(table) {
       appendRows(table, field, lfields, lfillupNeeded)
       appendRows(t.table, field, rfields, rfillupNeeded)
     });
-    return createTable(output);
+    return JSplyr.createTable(output);
   }
 
   /**
@@ -494,7 +417,7 @@ function createTable(table) {
       var found = findMatchingRow(currentRow);
       appendRow(found);
     }
-    return createTable(nested);
+    return JSplyr.createTable(nested);
   }
 
   /**
@@ -526,7 +449,7 @@ function createTable(table) {
         appendRow(row, element);
       }
     }
-    return createTable(output);
+    return JSplyr.createTable(output);
   }
 
   /**
@@ -664,22 +587,23 @@ function createTable(table) {
 
     // Inner matches
     if (!methodIn(["right"])) {
-      var results = createTable(constructJoin(this, right, lMatches));
+      var results = JSplyr.createTable(constructJoin(this, right, lMatches));
     } else {
-      results = createTable(constructJoin(right, this, rMatches, false, true));
+      results = JSplyr.createTable(constructJoin(right, this, rMatches, false, true));
     }
 
     if (methodIn(["left", "outer", "cross"])) {
-      var b = createTable(constructJoin(this, right, lMatches, true));
+      var b = JSplyr.createTable(constructJoin(this, right, lMatches, true));
       results = results.union(b);
     }
 
     if (methodIn(["right", "outer"])) {
-      var b = createTable(constructJoin(right, this, rMatches, true, true));
+      var b = JSplyr.createTable(constructJoin(right, this, rMatches, true, true));
       results = results.union(b);
     }
     return results;
   }
+
   /**
    * Limits the output starting at a given offset or the first row.
    *
@@ -695,13 +619,16 @@ function createTable(table) {
     fields.map(function(field) {
       output[field] = table[field].splice(offset, limit);
     });
-    return createTable(output);
+    return JSplyr.createTable(output);
   }
+
+
 
   return {
     table: table,
-    createTable: createTable,
     toMatrix: toMatrix,
+    getFields: getFields,
+    rows: rows,
 
     select: select,
     filter: filter,
@@ -711,16 +638,9 @@ function createTable(table) {
     flatten: flatten,
     limit: limit,
 
-    as: As,
-    fun: Fun,
-    is: is,
-    getFields: getFields,
-    rows: rows,
-    and: and,
-    or: or,
-    not: not
+    is: is
   };
-}
+};
 
 
 /**
@@ -733,7 +653,7 @@ function createTable(table) {
  * @param {Array} data The 2d array to be converted into a table.
  * @return {createTable} The input as a table instance.
  */
-function createTableFromMatrix(data) {
+JSplyr.createTableFromMatrix = function(data) {
   function verify2dArray() {
     var errorMessage = "Data is not a 2 dimensional Array"
     if (!Array.isArray(data)) {throw errorMessage;}
@@ -752,5 +672,87 @@ function createTableFromMatrix(data) {
     return output;
   }
 
-  return createTable(makeTable());
+  return JSplyr.createTable(makeTable());
+};
+
+/**
+ * An alias object that can be used instead of field names in selections.
+ *
+ * @param {Object} field The field of the table to be used.
+ * @param {string} alias The Name the field will have in the selection.
+ *
+ * @return {Object} Returns a field-alias object.
+ */
+JSplyr.as = function(field, alias) {
+  return {field: field, alias: alias};
+};
+
+
+/**
+ * Allows for scalar functions within records of a table.
+ * Note that while this is a scalar application of a function it is possible
+ * to use it as an aggregation when using group_by().
+ *
+ * @param {function} fun The function to be evaluated per row.
+ * @param {string} alias The alias of the function value.
+ * @param {...} ... Any arguments passed to the function.
+ */
+JSplyr.fun = function(fun, alias) {
+  if (typeof(fun) !== "function") {
+    throw "First argument must be a function!";
+  }
+
+  var args = objectToArray(arguments);
+  args.splice(0,2);
+  return {fun: fun, alias: alias, args: args};
+};
+
+/**
+ * Logical and applied to a list of arrays.
+ *
+ * k Arrays of length n will return an array of length n where each row is the
+ * logical and of row i of n for each column j of k.
+ *
+ * @param {Array} ... 0 or more arrays.
+ * @return {Array} The resulting vector of true/false values.
+ */
+JSplyr.and = function() {
+  var arguments = objectToArray(arguments);
+  var output = [];
+
+  for (var row in arguments[0]) {
+    output.push(arguments.reduce(function(a,b) {return a[row] && b[row];}));
+  }
+  return output;
+}
+
+
+/**
+ * Logical or applied to a list of arrays.
+ *
+ * k Arrays of length n will return an array of length n where each row is the
+ * logical or of row i of n for each column j of k.
+ *
+ * @param {Array} ... 0 or more arrays.
+ * @return {Array} The resulting vector of true/false values.
+ */
+JSplyr.or = function() {
+  var arguments = objectToArray(arguments);
+  var output = [];
+
+  for (var row in arguments[0]) {
+    output.push(arguments.reduce(function(a,b) {return a[row] || b[row];}));
+  }
+  return output;
+}
+
+
+/**
+ * The negation of an array of boolean values.
+ *
+ * @param {Array} x The array to be negated.
+ * @return {Array} an array of the negated values of x.
+ */
+JSplyr.not = function() {
+  return x.map(function(x) {return !x;});
 }
