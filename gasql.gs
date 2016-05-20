@@ -40,6 +40,17 @@ function createTable(table) {
   }
 
   /**
+   * Whether or not x is in array y
+   *
+   * @param {Object} x The object to be looked for
+   * @param {Array} y The array to be searched
+   * @return {logical} Whether x could be found in y.
+   */
+  function isIn(x, y) {
+    return y.indexOf(x) !== -1;
+  }
+
+  /**
    * Returns unique entries from an array.
    *
    * @param {Array} a The array to be deduped.
@@ -132,12 +143,10 @@ function createTable(table) {
     }
 
     var fields = getFields();
-    var f = fun.fun;
-    var args = fun.args;
     var r = rows();
 
     var args = args.map(function(arg) {
-      if (fields.indexOf(arg) === -1) {
+      if (fun.fields.indexOf(arg) === -1) {
         return repeat(arg, r);
       } else {
         return table[arg];
@@ -147,8 +156,8 @@ function createTable(table) {
     var output = [];
     var currentArgs;
     for (var row = 0; row < r; row++) {
-      currentArgs = args.map(function(arg) {return arg[row];});
-      output.push(f.apply(this, currentArgs));
+      currentArgs = fun.args.map(function(arg) {return arg[row];});
+      output.push(fun.fun.apply(this, currentArgs));
     }
     return output;
   }
@@ -229,7 +238,7 @@ function createTable(table) {
     if (fields.indexOf(lop) !== -1) {
       lopf = table[lop];
     }
-    if (fields.indexOf(row) !== -1) {
+    if (fields.indexOf(rop) !== -1) {
       ropf = table[rop]
     }
     if (lopf === undefined && ropf === undefined) {
@@ -413,7 +422,7 @@ function createTable(table) {
       } else if (rfillupNeeded) {
         output[field] = output[field].concat(repeat(empty, rows()));
       }
-    })
+    });
     return createTable(output);
   }
 
@@ -474,6 +483,26 @@ function createTable(table) {
     return createTable(nested);
   }
 
+  /**
+   * Joins two tables with one another
+   *
+   * Legal join strategies are:
+   *  - "inner": Only rows that have matches are used.
+   *  - "left": Inner join + unmatches left rows.
+   *  - "right" Inner join + unmatched right rows.
+   *  - "outer": Inner join and unmatched left and right rows.
+   *  - "cross": cross product of every row of the two tables.
+   *             If a cross join is used no keys are necessary.
+   *
+   * @param {table} right The right side of the join
+   * @param {string} method The join strategy, see detailed description
+   * @param {Object} lkeys Array containing the names of the left table's keys,
+                     or a single key string.
+   * @param {Object} rkeys Array containing the names of the right table's keys,
+                     or a single key string.
+   * @param {Object} empty The value to fill fields with that have no match.
+   * @return {createTable} a Table that is the join result of the two tables.
+   */
   function join(right, method, lKeys, rKeys, empty) {
     var allowed_methods = ["inner", "left", "right", "outer", "cross"]
     method = method || "inner";
@@ -482,6 +511,8 @@ function createTable(table) {
     if (allowed_methods.indexOf(method) === -1) {
       throw "Second argument must be one of" + allowed_methods
     }
+    if (typeof(lKeys) === "string") {lKeys = [lKeys];}
+    if (typeof(rKeys) === "string") {rKeys = [rKeys];}
     if (method !== "cross" && lKeys.length !== rKeys.length) {
       throw "Join key lists must have same length!";
     }
@@ -491,6 +522,10 @@ function createTable(table) {
 
     var oFields = lFields.map(function(f) {return "l." + f;}).concat(
                   rFields.map(function(f) {return "r." + f;}));
+
+    function methodIn(methods) {
+      return methods.indexOf(method) !== -1;
+    }
 
     function fillFields(table, fields, row, prefix) {
       prefix = prefix || "";
@@ -532,7 +567,7 @@ function createTable(table) {
       return output;
     }
 
-    function buildOutputWithMatches(l, r, matches, nonMatches, reverse) {
+    function constructJoin(l, r, matches, nonMatches, reverse) {
       nonMatches = nonMatches || false;
       reverse = reverse || false;
       var output  = createOutput(oFields);
@@ -544,34 +579,34 @@ function createTable(table) {
         );
       }
 
+      function pushRow() {
+        for (var field in oFields) {
+          output[oFields[field]].push(leftData.concat(rightData)[field]);
+        }
+      }
+
       for (var lRow in matches) {
+        var leftData = getRow(l, lRow, lFields);
         if (matches[lRow].length > 0 && !nonMatches) {
           for (var match in matches[lRow]) {
-            var leftData = getRow(l, lRow, lFields);
             var rightData = getRow(r, matches[lRow][match], rFields);
-            for (var field in oFields) {
-              output[oFields[field]].push(leftData.concat(rightData)[field]);
-            }
+            pushRow()
           }
         } else if(matches[lRow].length === 0 && nonMatches) {
-          var leftData = getRow(l, lRow, lFields);
           var rightData = repeat(empty, oFields.length);
-          for (var field in oFields) {
-            output[oFields[field]].push(leftData.concat(rightData)[field]);
-          }
+          pushRow();
         }
       }
       return output;
     }
 
-    if (["inner", "left", "outer"].indexOf(method) !== -1) {
+    if (methodIn(["inner", "left", "outer"])) {
       var lMatches = matchTables(this, right, lKeys, rKeys);
-
     }
-    if (["right", "outer"].indexOf(method) !== -1) {
+    if (methodIn(["right", "outer"])) {
       var rMatches = matchTables(right, this, rKeys, lKeys);
     }
-    if (["cross"].indexOf(method) !== -1) {
+    if (methodIn(["cross"])) {
       var lMatches = [];
       for (var lRow = 0; lRow < rows(); lRow++) {
         lMatches.push([]);
@@ -582,15 +617,19 @@ function createTable(table) {
     }
 
     // Inner matches
-    var results = createTable(buildOutputWithMatches(this, right, lMatches));
+    if (!methodIn(["right"])) {
+      var results = createTable(constructJoin(this, right, lMatches));
+    } else {
+      results = createTable(constructJoin(right, this, rMatches));
+    }
 
-    if (["left", "outer", "cross"].indexOf(method) !== -1) {
-      var b = createTable(buildOutputWithMatches(this, right, lMatches, true));
+    if (methodIn(["left", "outer", "cross"])) {
+      var b = createTable(constructJoin(this, right, lMatches, true));
       results = results.union(b);
     }
 
-    if (["right", "outer"].indexOf(method) !== -1) {
-      var b = createTable(buildOutputWithMatches(right, this, lMatches, true, true));
+    if (methodIn(["right", "outer"])) {
+      var b = createTable(constructJoin(right, this, rMatches, true, true));
       results = results.union(b);
     }
     return results;
@@ -634,7 +673,6 @@ function createTableFromMatrix(data) {
     var errorMessage = "Data is not a 2 dimensional Array"
     if (!Array.isArray(data)) {throw errorMessage;}
     data.map(function (x) {if (!Array.isArray(x)) {throw errorMessage;}});
-
   }
 
   function makeTable() {
