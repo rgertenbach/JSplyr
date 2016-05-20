@@ -10,18 +10,6 @@ JSplyr = Object.create(null);
  * @returns {Object} The table with methods to work with instances of itself.
  */
 JSplyr.createTable = function(table) {
-
-  /**
-   * Extracts element out of an Object into an array
-   *
-   * @param {Object} object The object to be parsed
-   * @return {Array} The Values of the object in an array.
-   */
-  function objectToArray(object) {
-    var output = [];
-    return Object.keys(object).map(function(key) {return object[key];});
-  }
-
   /**
    * Repeats a value n times
    *
@@ -255,7 +243,7 @@ JSplyr.createTable = function(table) {
    * @return {createTable} An instance of a table with the selected fields.
    */
   function select() {
-    var fields = objectToArray(arguments);
+    var fields = JSplyr.objectToArray(arguments);
 
     //verify fields exist
     var tableFields = getFields();
@@ -371,7 +359,7 @@ JSplyr.createTable = function(table) {
    * @return {createTable} The nested table.
    */
   function group_by() {
-    var groups = objectToArray(arguments);
+    var groups = JSplyr.objectToArray(arguments);
     fields = getFields();
 
     groups.map(function(arg) {
@@ -422,7 +410,6 @@ JSplyr.createTable = function(table) {
 
   /**
    * flatten unnests an array.
-   *
    * @param {string} field The nested field to be unnested.
    * @return {createTable} The flattened table.
    */
@@ -702,7 +689,7 @@ JSplyr.fun = function(fun, alias) {
     throw "First argument must be a function!";
   }
 
-  var args = objectToArray(arguments);
+  var args = JSplyr.objectToArray(arguments);
   args.splice(0,2);
   return {fun: fun, alias: alias, args: args};
 };
@@ -717,14 +704,14 @@ JSplyr.fun = function(fun, alias) {
  * @return {Array} The resulting vector of true/false values.
  */
 JSplyr.and = function() {
-  var arguments = objectToArray(arguments);
+  var arguments = Jsplyr.objectToArray(arguments);
   var output = [];
 
   for (var row in arguments[0]) {
     output.push(arguments.reduce(function(a,b) {return a[row] && b[row];}));
   }
   return output;
-}
+};
 
 
 /**
@@ -737,14 +724,14 @@ JSplyr.and = function() {
  * @return {Array} The resulting vector of true/false values.
  */
 JSplyr.or = function() {
-  var arguments = objectToArray(arguments);
+  var arguments = JSplyr.objectToArray(arguments);
   var output = [];
 
   for (var row in arguments[0]) {
     output.push(arguments.reduce(function(a,b) {return a[row] || b[row];}));
   }
   return output;
-}
+};
 
 
 /**
@@ -755,4 +742,16 @@ JSplyr.or = function() {
  */
 JSplyr.not = function() {
   return x.map(function(x) {return !x;});
-}
+};
+
+
+/**
+ * Extracts element out of an Object into an array
+ *
+ * @param {Object} object The object to be parsed
+ * @return {Array} The Values of the object in an array.
+ */
+JSplyr.objectToArray = function(object) {
+  var output = [];
+  return Object.keys(object).map(function(key) {return object[key];});
+};
