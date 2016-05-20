@@ -113,13 +113,11 @@ JSplyr.createTable = function(table) {
    * @return {Array} Returns an array of the results, one element per row.
    */
   function applyScalar(fun) {
-    if (!(fun.hasOwnProperty("fun") && fun.hasOwnProperty("alias"))) {
+    if (!JSplyr.isObject(fun, "function")) {
       throw "Must provide a Fun Object!";
     }
-
     var fields = getFields();
     var r = rows();
-
     var args = fun.args.map(function(arg) {
       if (!isIn(arg, fields)) {
         return repeat(arg, r);
@@ -127,6 +125,7 @@ JSplyr.createTable = function(table) {
         return table[arg];
       }
     });
+
     var output = [];
     var currentArgs;
     for (var row = 0; row < r; row++) {
@@ -267,7 +266,7 @@ JSplyr.createTable = function(table) {
     fields.map(function (field) {
       if (typeof(field) == "string") {
       output[field] = table[field];
-    } else if (field.hasOwnProperty("fun")) {
+    } else if (JSplyr.isObject(field, "function")) {
       output[field.alias] = applyScalar(field);
     } else {
       output[field.alias] = table[field.field];
@@ -623,6 +622,7 @@ JSplyr.createTable = function(table) {
   }
 
   return {
+    _name: "table",
     table: table,
     toMatrix: toMatrix,
     getFields: getFields,
@@ -683,7 +683,7 @@ JSplyr.createTableFromMatrix = function(data) {
  * @return {Object} Returns a field-alias object.
  */
 JSplyr.as = function(field, alias) {
-  return {field: field, alias: alias};
+  return {_name: "alias", field: field, alias: alias};
 };
 
 
@@ -700,10 +700,9 @@ JSplyr.fun = function(fun, alias) {
   if (typeof(fun) !== "function") {
     throw "First argument must be a function!";
   }
-
   var args = JSplyr.objectToArray(arguments);
   args.splice(0,2);
-  return {fun: fun, alias: alias, args: args};
+  return {_name: "function", fun: fun, alias: alias, args: args};
 };
 
 /**
@@ -777,5 +776,19 @@ JSplyr.objectToArray = function(object) {
  * @return {Object} An object containing the three arguments.
  */
 JSplyr.comp = function(lop, op, rop) {
-  return {lop: lop, op: op, rop: rop};
+  return {_name: "comparison", lop: lop, op: op, rop: rop};
+}
+
+
+/**
+ * verifies whether an Object is a certain JSplyr object.
+ *
+ * @param {Object} object The object to be checked
+ * @param {string} name The name of the object to be checked. Blank checks
+ *                 if it has a _name property (lame)
+ * @return {logical} Whether the object passes the test.
+ */
+JSplyr.isObject = function(object, name) {
+  if (!name) {return object.hasOwnProperty("_name");}
+  return object._name === name;
 }
