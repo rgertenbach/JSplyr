@@ -681,6 +681,17 @@ function createTable(table) {
     return results;
   }
 
+  function limit(limit, offset) {
+    offset = offset || 0;
+    var fields = getFields();
+    var output = createOutput(fields);
+
+    fields.map(function(field) {
+      output[field] = table[field].splice(offset, limit);
+    });
+    return createTable(output);
+  }
+
   return {
     table: table,
     createTable: createTable,
@@ -692,6 +703,7 @@ function createTable(table) {
     group_by: group_by,
     join: join,
     flatten: flatten,
+    limit: limit,
 
     as: As,
     fun: Fun,
