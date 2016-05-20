@@ -620,7 +620,7 @@ function createTable(table) {
     if (!methodIn(["right"])) {
       var results = createTable(constructJoin(this, right, lMatches));
     } else {
-      results = createTable(constructJoin(right, this, rMatches));
+      results = createTable(constructJoin(right, this, rMatches, false, true));
     }
 
     if (methodIn(["left", "outer", "cross"])) {
