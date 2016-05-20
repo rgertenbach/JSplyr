@@ -393,34 +393,32 @@ function createTable(table) {
     }
     if (behavior == 1) {fields = lfields;}
     if (behavior == 2) {fields = rfields;}
-    if (behavior == 3) {
-      fields = unique(lfields.concat(rfields));
-    };
+    if (behavior == 3) {fields = unique(lfields.concat(rfields));}
 
     var output = createOutput(fields);
 
     // Check if any of the fields of the left table are in the final table
     // To see if missing values need to be filled up
-    var lfillupNeeded = lfields.map(function(field) {
-      return isIn(field, fields);}).reduce(function(a,b) {
-        return a || b;});
+    function fillUpNeeded(unionPartFields) {
+      return unionPartFields.map(function(field) {
+        return isIn(field, fields);}).reduce(function(a,b) {
+          return a || b;});
+    }
 
-    var rfillupNeeded = rfields.map(function(field) {
-      return isIn(field, fields);}).reduce(function(a,b) {
-        return a || b;});
+    function appendRows(source, field, unionPartfields, needsFillUp) {
+      if (isIn(field, unionPartfields)) {
+        output[field] = output[field].concat(source[field]);
+      } else if (needsFillUp) {
+        output[field] = output[field].concat(repeat(empty, rows()));
+      }
+    }
+
+    var lfillupNeeded = fillUpNeeded(lfields);
+    var rfillupNeeded = fillUpNeeded(rfields);
 
     fields.map(function(field) {
-      if (isIn(field, lfields)) {
-        output[field] = output[field].concat(table[field]);
-      } else if (lfillupNeeded) {
-        output[field] = output[field].concat(repeat(empty, rows()));
-      }
-
-      if (isIn(field, rfields)) {
-        output[field] = output[field].concat(t.table[field]);
-      } else if (rfillupNeeded) {
-        output[field] = output[field].concat(repeat(empty, rows()));
-      }
+      appendRows(table, field, lfields, lfillupNeeded)
+      appendRows(t.table, field, rfields, rfillupNeeded)
     });
     return createTable(output);
   }
