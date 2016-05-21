@@ -753,7 +753,7 @@ JSplyr.arrayOr = function() {
  * @param {Array} x The array to be negated.
  * @return {Array} an array of the negated values of x.
  */
-JSplyr.arrayNot = function() {
+JSplyr.arrayNot = function(x) {
   return x.map(function(x) {return !x;});
 };
 
@@ -800,7 +800,7 @@ JSplyr.isObject = function(object, name) {
  * Returns a logical combination of type and
  *
  * @param {comparison} ... A series of comparisons
- * @return {logical combination}
+ * @return {logical combination} A logical and combinations
  */
 JSplyr.and = function() {
   var args = JSplyr.objectToArray(arguments);
@@ -812,11 +812,22 @@ JSplyr.and = function() {
  * Returns a logical combination of type or
  *
  * @param {comparison} ... A series of comparisons
- * @return {logical combination}
+ * @return {logical combination} A logical or combinations
  */
 JSplyr.or = function() {
   var args = JSplyr.objectToArray(arguments);
   return {_JSplyrName: "logical combination", type: "or", args: args};
+};
+
+
+/**
+ * Returns the logical complement of a comparison
+ *
+ * @param {comparison} comp The logical comparison to be negated/
+ * @return {logical combination} A logical negation
+ */
+JSplyr.not = function(comp) {
+  return {_JSplyrName: "logical combination", type: "not", args: [comp]};
 };
 
 
@@ -830,8 +841,10 @@ JSplyr.evaluateLogicalCombination = function(comb, target) {
     }
   });
   if (comb.type === "and") {
-    return JSplyr.arrayAnd.apply(target, logicalArrays)
+    return JSplyr.arrayAnd.apply(target, logicalArrays);
   } if (comb.type === "or") {
-    return JSplyr.arrayOr.apply(target, logicalArrays)
+    return JSplyr.arrayOr.apply(target, logicalArrays);
+  } if (comb.type === "not") {
+    return JSplyr.arrayNot.apply(target, logicalArrays);
   }
 };
