@@ -113,13 +113,11 @@ JSplyr.createTable = function(table) {
    * @return {Array} Returns an array of the results, one element per row.
    */
   function applyScalar(fun) {
-    if (!(fun.hasOwnProperty("fun") && fun.hasOwnProperty("alias"))) {
+    if (!JSplyr.isObject(fun, "function")) {
       throw "Must provide a Fun Object!";
     }
-
     var fields = getFields();
     var r = rows();
-
     var args = fun.args.map(function(arg) {
       if (!isIn(arg, fields)) {
         return repeat(arg, r);
@@ -127,6 +125,7 @@ JSplyr.createTable = function(table) {
         return table[arg];
       }
     });
+
     var output = [];
     var currentArgs;
     for (var row = 0; row < r; row++) {
@@ -189,7 +188,11 @@ JSplyr.createTable = function(table) {
    * @param {Object} rop The right operand. Can be a field name or a literal.
    * @return {Array} An array of booleans or values that will be used as such.
    */
-  function is(lop, op, rop) {
+  function is(comp) {
+    var lop = comp.lop;
+    var op = comp.op;
+    var rop = comp.rop;
+
     var operations = {
       "==":  function(l, r) {return l ==  r;},
       "===": function(l, r) {return l === r;},
@@ -263,7 +266,7 @@ JSplyr.createTable = function(table) {
     fields.map(function (field) {
       if (typeof(field) == "string") {
       output[field] = table[field];
-    } else if (field.hasOwnProperty("fun")) {
+    } else if (JSplyr.isObject(field, "function")) {
       output[field.alias] = applyScalar(field);
     } else {
       output[field.alias] = table[field.field];
@@ -280,13 +283,13 @@ JSplyr.createTable = function(table) {
    */
   function filter(criterion) {
     var fields = getFields();
-    var output = {};
-
-    fields.map(function(field) {output[field] = [];});
+    var output = createOutput(fields);
 
     for (var row in criterion) {
       if (criterion[row]) {
-        fields.map(function(field) {output[field].push(table[field][row]);});
+        fields.map(function(field) {
+          output[field].push(table[field][row]);
+        });
       }
     }
     return JSplyr.createTable(output);
@@ -463,7 +466,7 @@ JSplyr.createTable = function(table) {
     var allowed_methods = ["inner", "left", "right", "outer", "cross"]
     method = method || "inner";
 
-    if (!right.hasOwnProperty("table")) {throw "First argument must be table!";}
+    if (!JSplyr.isObject(right, "table")) {throw "First argument must be table!";}
     if (!isIn(method, allowed_methods)) {
       throw "Second argument must be one of" + allowed_methods
     }
@@ -610,8 +613,18 @@ JSplyr.createTable = function(table) {
   }
 
 
+  function where(expr) {
+    if (JSplyr.isObject(expr, "comparison")) {
+      return this.filter(this.is.apply(this, expr));
+    } else if(JSplyr.isObject(expr, "logical combination")) {
+      return this.filter(JSplyr.evaluateLogicalCombination(expr, this))
+    } else {
+      throw "Expression must be a comparison or logical combination!";
+    }
+  }
 
   return {
+    _JSplyrName: "table",
     table: table,
     toMatrix: toMatrix,
     getFields: getFields,
@@ -624,6 +637,7 @@ JSplyr.createTable = function(table) {
     join: join,
     flatten: flatten,
     limit: limit,
+    where: where,
 
     is: is
   };
@@ -671,7 +685,7 @@ JSplyr.createTableFromMatrix = function(data) {
  * @return {Object} Returns a field-alias object.
  */
 JSplyr.as = function(field, alias) {
-  return {field: field, alias: alias};
+  return {_JSplyrName: "alias", field: field, alias: alias};
 };
 
 
@@ -688,10 +702,9 @@ JSplyr.fun = function(fun, alias) {
   if (typeof(fun) !== "function") {
     throw "First argument must be a function!";
   }
-
   var args = JSplyr.objectToArray(arguments);
   args.splice(0,2);
-  return {fun: fun, alias: alias, args: args};
+  return {_JSplyrName: "function", fun: fun, alias: alias, args: args};
 };
 
 /**
@@ -703,8 +716,8 @@ JSplyr.fun = function(fun, alias) {
  * @param {Array} ... 0 or more arrays.
  * @return {Array} The resulting vector of true/false values.
  */
-JSplyr.and = function() {
-  var arguments = Jsplyr.objectToArray(arguments);
+JSplyr.arrayAnd = function() {
+  var arguments = JSplyr.objectToArray(arguments);
   var output = [];
 
   for (var row in arguments[0]) {
@@ -723,7 +736,7 @@ JSplyr.and = function() {
  * @param {Array} ... 0 or more arrays.
  * @return {Array} The resulting vector of true/false values.
  */
-JSplyr.or = function() {
+JSplyr.arrayOr = function() {
   var arguments = JSplyr.objectToArray(arguments);
   var output = [];
 
@@ -740,7 +753,7 @@ JSplyr.or = function() {
  * @param {Array} x The array to be negated.
  * @return {Array} an array of the negated values of x.
  */
-JSplyr.not = function() {
+JSplyr.arrayNot = function(x) {
   return x.map(function(x) {return !x;});
 };
 
@@ -754,4 +767,84 @@ JSplyr.not = function() {
 JSplyr.objectToArray = function(object) {
   var output = [];
   return Object.keys(object).map(function(key) {return object[key];});
+};
+
+/**
+ * Return a comparison object
+ *
+ * @param {Object} lop The left operand. Can be a field name or a literal.
+ * @param {Object} op The operand.
+ * @param {Object} rop The right operand. Can be a field name or a literal.
+ * @return {Object} An object containing the three arguments.
+ */
+JSplyr.comp = function(lop, op, rop) {
+  return {_JSplyrName: "comparison", lop: lop, op: op, rop: rop};
+}
+
+
+/**
+ * verifies whether an Object is a certain JSplyr object.
+ *
+ * @param {Object} object The object to be checked
+ * @param {string} name The name of the object to be checked. Blank checks
+ *                 if it has a _JSplyrName property (lame)
+ * @return {logical} Whether the object passes the test.
+ */
+JSplyr.isObject = function(object, name) {
+  if (!name) {return object.hasOwnProperty("_JSplyrName");}
+  return object._JSplyrName === name;
+};
+
+
+/**
+ * Returns a logical combination of type and
+ *
+ * @param {comparison} ... A series of comparisons
+ * @return {logical combination} A logical and combinations
+ */
+JSplyr.and = function() {
+  var args = JSplyr.objectToArray(arguments);
+  return {_JSplyrName: "logical combination", type: "and", args: args};
+};
+
+
+/**
+ * Returns a logical combination of type or
+ *
+ * @param {comparison} ... A series of comparisons
+ * @return {logical combination} A logical or combinations
+ */
+JSplyr.or = function() {
+  var args = JSplyr.objectToArray(arguments);
+  return {_JSplyrName: "logical combination", type: "or", args: args};
+};
+
+
+/**
+ * Returns the logical complement of a comparison
+ *
+ * @param {comparison} comp The logical comparison to be negated/
+ * @return {logical combination} A logical negation
+ */
+JSplyr.not = function(comp) {
+  return {_JSplyrName: "logical combination", type: "not", args: [comp]};
+};
+
+
+JSplyr.evaluateLogicalCombination = function(comb, target) {
+  if (!JSplyr.isObject(comb, "logical combination")) {"Not a combination!";}
+  var logicalArrays = comb.args.map(function(expr) {
+    if (JSplyr.isObject(expr, "logical combination")) {
+      return JSplyr.evaluateLogicalCombination(expr, target);
+    } else {
+      return target.is(expr);
+    }
+  });
+  if (comb.type === "and") {
+    return JSplyr.arrayAnd.apply(target, logicalArrays);
+  } if (comb.type === "or") {
+    return JSplyr.arrayOr.apply(target, logicalArrays);
+  } if (comb.type === "not") {
+    return JSplyr.arrayNot.apply(target, logicalArrays);
+  }
 };
