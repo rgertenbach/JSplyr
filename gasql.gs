@@ -37,7 +37,7 @@ JSplyr.createTable = function(table) {
     if (a1.length !== a2.length) {return false;}
     for (var i in a1) {
       if (Array.isArray(a1[i])) {
-        if (!equalArrays(a1[i], a2[i])) {return false;}
+        if (!equalArrays(a1[i], a2[i])) {return false;jj}
       } else {
         if (a1[i] !== a2[i]) {return false;}
       }
@@ -182,10 +182,11 @@ JSplyr.createTable = function(table) {
    *
    * The function accepts either a string of a comparison such as == or > or
    * a function. Due to the way JS evaluates truthiness any return value is ok.
+   * The comperands can be field names, fun instances or literals.
    *
-   * @param {Object} lop The left operand. Can be a field name or a literal.
+   * @param {Object} lop The left operand.
    * @param {Object} op The operand.
-   * @param {Object} rop The right operand. Can be a field name or a literal.
+   * @param {Object} rop The right operand.
    * @return {Array} An array of booleans or values that will be used as such.
    */
   function is(comp) {
@@ -212,25 +213,19 @@ JSplyr.createTable = function(table) {
     var lopf;
     var ropf;
     var output = [];
-    if (isIn(lop, fields)) {
-      lopf = table[lop];
+
+    function createComparator(side) {
+      if (isIn(side, fields)) {
+        return table[side];
+      } if (JSplyr.isObject(side, "function")) {
+        return applyScalar(side)
+      }
+      return repeat(side, rows());
     }
-    if (isIn(rop, fields)) {
-      ropf = table[rop]
-    }
-    if (lopf === undefined && ropf === undefined) {
-      return repeat(operations[op](lop, rop), rows());
-    }
-    if (lopf === undefined) {
-      lopf = repeat(lop, rows());
-    } else {
-      lopf = table[lop];
-    }
-    if (ropf === undefined) {
-      ropf = repeat(rop, rows());
-    } else {
-      ropf = table[rop];
-    }
+
+    lopf = createComparator(lop);
+    ropf = createComparator(rop);
+
     for (var row in lopf) {
       output.push(operations[op](lopf[row], ropf[row]));
     }
@@ -831,6 +826,12 @@ JSplyr.not = function(comp) {
 };
 
 
+/**
+ * Recursively evaluates logical combinations
+ *
+ * @param {logical combination} comb the logical combination to be evaluated.
+ * @param {table} target the table on which the logical combination happens.
+ */
 JSplyr.evaluateLogicalCombination = function(comb, target) {
   if (!JSplyr.isObject(comb, "logical combination")) {"Not a combination!";}
   var logicalArrays = comb.args.map(function(expr) {
