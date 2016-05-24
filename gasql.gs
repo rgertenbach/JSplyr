@@ -618,6 +618,42 @@ JSplyr.createTable = function(table) {
     }
   }
 
+
+  /**
+   * Returns the row indices of the ascendingly ranked field
+   *
+   * @param {Object} field A fieldname or fun object.
+   * @return {Array} An array of the row numbers (0-based).
+   */
+  function rankOrder(field, dense) {
+    dense = dense || true;
+    if (JSplyr.isObject(field, "function")) {
+      var col = applyScalar(fied);
+    } else {
+      var col = table[field];
+    }
+
+    function minIndex() {
+      return indices.reduce(function(x,y) {
+        return col[x] < col[y] ? x : y;
+      })
+    }
+
+    var indices = JSplyr.range(col.length);
+    var ranks = [];
+
+    while (indices.length > 0) {
+      var minValue = minIndex();
+      console.log(indices.indexOf(minValue))
+      ranks.push((dense ?
+        indices.splice(indices.indexOf(minValue)) :
+        indices.splice(indices.indexOf(minValue), 1)[0]));
+    }
+
+    return ranks;
+  }
+
+
   return {
     _JSplyrName: "table",
     table: table,
@@ -634,6 +670,7 @@ JSplyr.createTable = function(table) {
     limit: limit,
     where: where,
 
+    rank: rankOrder,
     is: is
   };
 };
@@ -849,3 +886,43 @@ JSplyr.evaluateLogicalCombination = function(comb, target) {
     return JSplyr.arrayNot.apply(target, logicalArrays);
   }
 };
+
+
+/**
+ * A python style range generator
+ *
+ * @param
+ */
+JSplyr.range = function(a, b, c) {
+  var start, end, step;
+  if (c === undefined && b === undefined) {
+    start = 0;
+    end = a;
+    step = 1;
+  } else {
+    start = a;
+    end = b;
+    step = c || 1;
+  }
+  var current = start;
+  var output = [];
+  while (current < end) {
+    output.push(current);
+    current += step;
+  }
+  return output;
+};
+
+/**
+ *
+ */
+JSplyr.asc = function(field) {
+  return {_JSplyrName: "order_param", type: "asc", field: field};
+}
+
+/**
+ *
+ */
+JSplyr.desc = function(fied) {
+  return {_JSplyrName: "order_param", type: "desc", field: field};
+}
