@@ -627,10 +627,14 @@ JSplyr.createTable = function(table) {
    */
   function rankOrder(field, dense) {
     dense = dense || true;
-    if (JSplyr.isObject(field, "function")) {
-      var col = applyScalar(fied);
+    if (!JSplyr.isObject(field, "order param")) {
+      throw "Order param not an order object!";
+    }
+
+    if (JSplyr.isObject(field.field, "function")) {
+      var col = applyScalar(fied.field);
     } else {
-      var col = table[field];
+      var col = table[field.field];
     }
 
     function minIndex() {
@@ -645,12 +649,24 @@ JSplyr.createTable = function(table) {
     while (indices.length > 0) {
       var minValue = minIndex();
       console.log(indices.indexOf(minValue))
-      ranks.push((dense ?
-        indices.splice(indices.indexOf(minValue)) :
-        indices.splice(indices.indexOf(minValue), 1)[0]));
+      ranks.push((indices.splice(indices.indexOf(minValue), 1)[0])); // dense ordering goes here
     }
 
     return ranks;
+  }
+
+
+  function order_by() {
+    var args = JSplyr.objectToArray(arguments);
+    args.map(function(arg) {
+      if (!JSplyr.isObject(arg, "order param")) {
+        throw "One of te arguments is not an order object!";
+      }});
+
+    var orderRanks = args.map(function(arg) {
+      return rankOrder(arg);
+    });
+    console.log(orderRanks)
   }
 
 
@@ -669,6 +685,7 @@ JSplyr.createTable = function(table) {
     flatten: flatten,
     limit: limit,
     where: where,
+    order_by: order_by,
 
     rank: rankOrder,
     is: is
@@ -914,15 +931,17 @@ JSplyr.range = function(a, b, c) {
 };
 
 /**
- *
+ * @param {Object} field a field name or fun instance.
+ * @return {Object} an order orbject (ascending type)
  */
 JSplyr.asc = function(field) {
-  return {_JSplyrName: "order_param", type: "asc", field: field};
+  return {_JSplyrName: "order param", type: "asc", field: field};
 }
 
 /**
- *
+ * @param {Object} field a field name or fun instance.
+ * @return {Object} an order orbject (descending type)
  */
-JSplyr.desc = function(fied) {
-  return {_JSplyrName: "order_param", type: "desc", field: field};
+JSplyr.desc = function(field) {
+  return {_JSplyrName: "order param", type: "desc", field: field};
 }
