@@ -681,20 +681,63 @@ JSplyr.createTable = function(table) {
     var args = JSplyr.objectToArray(arguments);
     args.map(function(arg) {
       if (!JSplyr.isObject(arg, "order param")) {
-        throw "One of te arguments is not an order object!";
+        throw "One of the arguments is not an order object!";
       }});
 
-    var orderRanks = args.map(function(arg) {
-      return rankOrder(arg);
+    var cols = args.map(function(arg) {
+      if (JSplyr.isObject(arg.field, "function")) {
+        return applyScalar(arg.field);
+      } else {
+        return table[arg.field];
+      }
     });
 
-    for (var rank in orderRanks[0]) {
-      // go through ranks
-      // if a ranks is has more than one recusrively go down the rank orders
-      // checking which of the fields appreas first without another
-      // until an order is found OR none is found
+    var indices = JSplyr.range(rows());
+    var ranks = [];
+
+
+    /*
+     * Finds the index of the value that comes next.
+     * Calls itself recursively if needed.
+     */
+    function findMinI(colI) {
+      var order = args[colI].type;
+      var minVal = indices.map(function(i) {
+        return cols[colI][i];
+      }).reduce(function(x,y) {
+        return  x < y ?
+          (order == "asc" ? x : y) :
+          (order == "asc" ? y : x);
+      });
+
+      var minValIndices = indices.filter(function(i) {
+        return cols[colI][i] === minVal;
+      });
+
+      if (minValIndices.length === 1 || colI === cols.length - 1) {
+        return minValIndices[0];
+      } else {
+        return findMinI(colI + 1);
+      }
     }
-    console.log(orderRanks)
+
+    var ranks = [];
+    while (indices.length > 0) {
+      var minIndex = findMinI(0);
+      var minIndexPos = indices.indexOf(minIndex);
+      var minI = indices.splice(minIndexPos, 1)[0];
+      ranks.push(minI)
+    }
+
+    var fields = getFields();
+    var output = createOutput(fields);
+    ranks.map(function(rank) {
+      fields.map(function(field) {
+        output[field].push(table[field][rank]);
+      })
+    });
+
+    return JSplyr.createTable(output);
   }
 
 
