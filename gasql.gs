@@ -570,9 +570,10 @@ JSplyr.createTable = function(table) {
       }
     }
 
+    var results;
     // Inner matches
     if (!methodIn(["right"])) {
-      var results = JSplyr.createTable(constructJoin(this, right, lMatches));
+      results = JSplyr.createTable(constructJoin(this, right, lMatches));
     } else {
       results = JSplyr.createTable(constructJoin(right, this, rMatches, false, true));
     }
@@ -623,6 +624,8 @@ JSplyr.createTable = function(table) {
    * Returns the row indices of the ascendingly ranked field
    *
    * @param {Object} field A fieldname or fun object.
+   * @param {logical} dense Whether same values should get the same rank or not.
+  *                   This is obviously needed for sorting by multiple columns.
    * @return {Array} An array of the row numbers (0-based).
    */
   function rankOrder(field, dense) {
@@ -638,9 +641,21 @@ JSplyr.createTable = function(table) {
     }
 
     function minIndex() {
-      return indices.reduce(function(x,y) {
-        return col[x] < col[y] ? x : y;
-      })
+      return indices.reduce(function(y, x) {
+        return (col[x] < col[y] ?
+          (field.type === "desc" ? y : x) :
+          (field.type === "desc" ? x : y));
+      });
+    }
+
+    function getNext() {
+      var minVal = minIndex();
+      var index = indices.splice(indices.indexOf(minVal), 1)[0];
+      return index;
+    }
+
+    function lastValue() {
+      return col[ranks[ranks.length - 1][0]];
     }
 
     var indices = JSplyr.range(col.length);
@@ -648,14 +663,20 @@ JSplyr.createTable = function(table) {
 
     while (indices.length > 0) {
       var minValue = minIndex();
-      console.log(indices.indexOf(minValue))
-      ranks.push((indices.splice(indices.indexOf(minValue), 1)[0])); // dense ordering goes here
-    }
+      var next = getNext();
 
+      if (ranks.length !== 0 && lastValue() === col[next] && dense) {
+        ranks[ranks.length - 1].push(next);
+      } else {
+        ranks.push([next]);
+      }
+    }
     return ranks;
   }
 
-
+  /**
+   * Orders a table by the fields provided.
+   */
   function order_by() {
     var args = JSplyr.objectToArray(arguments);
     args.map(function(arg) {
@@ -666,6 +687,13 @@ JSplyr.createTable = function(table) {
     var orderRanks = args.map(function(arg) {
       return rankOrder(arg);
     });
+
+    for (var rank in orderRanks[0]) {
+      // go through ranks
+      // if a ranks is has more than one recusrively go down the rank orders
+      // checking which of the fields appreas first without another
+      // until an order is found OR none is found
+    }
     console.log(orderRanks)
   }
 
