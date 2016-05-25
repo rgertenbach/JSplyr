@@ -570,9 +570,10 @@ JSplyr.createTable = function(table) {
       }
     }
 
+    var results;
     // Inner matches
     if (!methodIn(["right"])) {
-      var results = JSplyr.createTable(constructJoin(this, right, lMatches));
+      results = JSplyr.createTable(constructJoin(this, right, lMatches));
     } else {
       results = JSplyr.createTable(constructJoin(right, this, rMatches, false, true));
     }
@@ -618,6 +619,128 @@ JSplyr.createTable = function(table) {
     }
   }
 
+
+  /**
+   * Returns the row indices of the ascendingly ranked field
+   *
+   * @param {Object} field A fieldname or fun object.
+   * @param {logical} dense Whether same values should get the same rank or not.
+  *                   This is obviously needed for sorting by multiple columns.
+   * @return {Array} An array of the row numbers (0-based).
+   */
+  function rankOrder(field, dense) {
+    dense = dense || true;
+    if (!JSplyr.isObject(field, "order param")) {
+      throw "Order param not an order object!";
+    }
+
+    if (JSplyr.isObject(field.field, "function")) {
+      var col = applyScalar(fied.field);
+    } else {
+      var col = table[field.field];
+    }
+
+    function minIndex() {
+      return indices.reduce(function(y, x) {
+        return (col[x] < col[y] ?
+          (field.type === "desc" ? y : x) :
+          (field.type === "desc" ? x : y));
+      });
+    }
+
+    function getNext() {
+      var minVal = minIndex();
+      var index = indices.splice(indices.indexOf(minVal), 1)[0];
+      return index;
+    }
+
+    function lastValue() {
+      return col[ranks[ranks.length - 1][0]];
+    }
+
+    var indices = JSplyr.range(col.length);
+    var ranks = [];
+
+    while (indices.length > 0) {
+      var minValue = minIndex();
+      var next = getNext();
+
+      if (ranks.length !== 0 && lastValue() === col[next] && dense) {
+        ranks[ranks.length - 1].push(next);
+      } else {
+        ranks.push([next]);
+      }
+    }
+    return ranks;
+  }
+
+  /**
+   * Orders a table by the fields provided.
+   */
+  function order_by() {
+    var args = JSplyr.objectToArray(arguments);
+    args.map(function(arg) {
+      if (!JSplyr.isObject(arg, "order param")) {
+        throw "One of the arguments is not an order object!";
+      }});
+
+    var cols = args.map(function(arg) {
+      if (JSplyr.isObject(arg.field, "function")) {
+        return applyScalar(arg.field);
+      } else {
+        return table[arg.field];
+      }
+    });
+
+    var indices = JSplyr.range(rows());
+    var ranks = [];
+
+
+    /*
+     * Finds the index of the value that comes next.
+     * Calls itself recursively if needed.
+     */
+    function findMinI(colI) {
+      var order = args[colI].type;
+      var minVal = indices.map(function(i) {
+        return cols[colI][i];
+      }).reduce(function(x,y) {
+        return  x < y ?
+          (order == "asc" ? x : y) :
+          (order == "asc" ? y : x);
+      });
+
+      var minValIndices = indices.filter(function(i) {
+        return cols[colI][i] === minVal;
+      });
+
+      if (minValIndices.length === 1 || colI === cols.length - 1) {
+        return minValIndices[0];
+      } else {
+        return findMinI(colI + 1);
+      }
+    }
+
+    var ranks = [];
+    while (indices.length > 0) {
+      var minIndex = findMinI(0);
+      var minIndexPos = indices.indexOf(minIndex);
+      var minI = indices.splice(minIndexPos, 1)[0];
+      ranks.push(minI)
+    }
+
+    var fields = getFields();
+    var output = createOutput(fields);
+    ranks.map(function(rank) {
+      fields.map(function(field) {
+        output[field].push(table[field][rank]);
+      })
+    });
+
+    return JSplyr.createTable(output);
+  }
+
+
   return {
     _JSplyrName: "table",
     table: table,
@@ -633,7 +756,9 @@ JSplyr.createTable = function(table) {
     flatten: flatten,
     limit: limit,
     where: where,
+    order_by: order_by,
 
+    rank: rankOrder,
     is: is
   };
 };
@@ -849,3 +974,45 @@ JSplyr.evaluateLogicalCombination = function(comb, target) {
     return JSplyr.arrayNot.apply(target, logicalArrays);
   }
 };
+
+
+/**
+ * A python style range generator
+ *
+ * @param
+ */
+JSplyr.range = function(a, b, c) {
+  var start, end, step;
+  if (c === undefined && b === undefined) {
+    start = 0;
+    end = a;
+    step = 1;
+  } else {
+    start = a;
+    end = b;
+    step = c || 1;
+  }
+  var current = start;
+  var output = [];
+  while (current < end) {
+    output.push(current);
+    current += step;
+  }
+  return output;
+};
+
+/**
+ * @param {Object} field a field name or fun instance.
+ * @return {Object} an order orbject (ascending type)
+ */
+JSplyr.asc = function(field) {
+  return {_JSplyrName: "order param", type: "asc", field: field};
+}
+
+/**
+ * @param {Object} field a field name or fun instance.
+ * @return {Object} an order orbject (descending type)
+ */
+JSplyr.desc = function(field) {
+  return {_JSplyrName: "order param", type: "desc", field: field};
+}
