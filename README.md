@@ -46,7 +46,11 @@ JSplyr has two table constructors
 createTable takes an object as its argument and returns a table object.
 The object's values need to be arrays that all have the same length.
 
-**Example:**
+#### Arguments
+
+**data:** An object whose keys are the field names and values are arrays of equal length 
+
+#### Example
 
 | Customer ID | Country | Revenue |
 | -----------:| ------- | -------:|
@@ -76,7 +80,11 @@ createTableFromMatrix creates a table object from a two dimensional array.
 Each array within the top array is a row with every element of those arrays being a column's cell within that row.
 This format of data is for example used when values are retrieved from Google Spreadsheets.
 
-**Example:**
+#### Arguments
+
+**data: ** A two dimensional array, aka an array containing arrays of equal length where each array is a row and each element is a column within that row.
+
+#### Example
 
 | Country Code | Country Name  |
 | ------------ | ------------- |
@@ -108,13 +116,16 @@ Each of these methods return a table itself which contains the same methods.
 
 ### 2.1. select()
 Select returns a table containing the selection of columns of the table that it was used on.
-These columns can be:
+
+ #### Arguments 
+
+ **...: ** 0 or more arguments that create a field.
+ A field can be:
  - A column from the source table, called with a string containing the column name.
  - A column that has been given an alias by using JSplyr.as(). (See more under xxx)
  - A calculated column that is an application of a function using JSplyr.fun() whose arguments can be column names. (See more under xxx)
 
-
-**Example:**
+#### Example
 ```javascript
 function convertToUsd(x) {
   var exchangeRate = 1.3;
@@ -144,7 +155,7 @@ var customersUsd = customers.select(
 filter filters a table based on an array of truthy or falsy values.
 If a value is truthy the row is in the final output;
 
-**Example:**
+#### Example
 ```javascript
 var mySelection = customers.filter([true, false, true, false, true,
                                     false, true, false, true, false]);
@@ -164,7 +175,7 @@ A where clause takes either:
  - A comparison object or
  - A logical combination object.
 
-**Example:**
+#### Example
 ```javascript
 var highSpendersFromGb = customers.where(
     JSplyr.and(
@@ -182,7 +193,7 @@ var highSpendersFromGb = customers.where(
 group_by groups the table by its keys and puts all values that are not grouping keys into arrays.
 This allows map and reduce operations, that are embedded in scalar functions to operate on these arrays and aggregate data.
 
-**Example**
+#### Example
 ```javascript
 var revByCountry = customers.group_by("country");
 ```
@@ -199,7 +210,7 @@ Flatten takes a field that is nested (usually by a group by operation) and unrav
 This operation can only be performed on one measure to avoid dangers of mismatching different elements inside of the arrays.
 It's main use is for when the flattened data was an array in the first place, not a result of grouping, or if grouped, the only field that was grouped.
 
-**Example**
+#### Example
 ```javascript
 revByCountry.flatten("rev");
 ```
@@ -220,7 +231,7 @@ revByCountry.flatten("rev");
 Limit simply limit the amount of rows of the table.
 It takes an optional offset parameter and returns up to as many rows as specified in the limit.
 
-**Example:**
+#### Example
 ```javascript
 customers.limit(2,2);
 ```
@@ -244,7 +255,7 @@ Join supports all typical join types:
  Join creates a row for every match it finds (unlike for example a vlookup)
 
 
-**Example:**
+#### Example
 ```javascript
 customers.join(countries, "left",  ["Country"], ["Country Code"], "")
          .select(JSplyr.as("r.Country Name", "Country"),
@@ -278,24 +289,25 @@ A union has several strategies
 order_by orders a table.
 It takes multiple Order expressions. In the case of a tied it wll go to the next field and see which row should come first.
 
-**Example:**
+#### Example
 ```javascript
 customers.order(JSplyr.asc("Country"), JSplyr.desc("Revenue"));
 ```
 
 TODO:
+
 | Customer ID | Country | Revenue |
 | -----------:| ------- | -------:|
-|           1 | GB      |   19.99 |
-|           2 | GB      |   28.50 |
 |           3 | DE      |  113.50 |
-|           4 | GB      |   23.54 |
-|           5 | FR      |   89.99 |
-|           6 | GB      |   23.10 |
-|           7 | FR      |   90.00 |
-|           8 | xx      |    0.10 |
-|           9 | GB      |    5.00 |
 |          10 | DE      |    4.99 |
+|           7 | FR      |   90.00 |
+|           5 | FR      |   89.99 |
+|           2 | GB      |   28.50 |
+|           4 | GB      |   23.54 |
+|           6 | GB      |   23.10 |
+|           1 | GB      |   19.99 |
+|           9 | GB      |    5.00 |
+|           8 | xx      |    0.10 |
 
 ## JSplyr expression constructors
 
