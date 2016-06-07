@@ -48,7 +48,7 @@ The object's values need to be arrays that all have the same length.
 
 #### Arguments
 
-**data:** An object whose keys are the field names and values are arrays of equal length 
+**data:** An object whose keys are the field names and values are arrays of equal length
 
 #### Example
 
@@ -115,17 +115,19 @@ SQL users may be thinking it lacks some functionality of SQL, but the ability to
 Each of these methods return a table itself which contains the same methods.
 
 ### 2.1. select()
+
 Select returns a table containing the selection of columns of the table that it was used on.
 
- #### Arguments 
+ #### Arguments
 
- **...: ** 0 or more arguments that create a field.
+ ...: 0 or more arguments that create a field.
  A field can be:
  - A column from the source table, called with a string containing the column name.
  - A column that has been given an alias by using JSplyr.as(). (See more under xxx)
  - A calculated column that is an application of a function using JSplyr.fun() whose arguments can be column names. (See more under xxx)
 
 #### Example
+
 ```javascript
 function convertToUsd(x) {
   var exchangeRate = 1.3;
@@ -151,9 +153,13 @@ var customersUsd = customers.select(
 |           9 |   5.00 |   6.50  |
 |          10 |   4.99 |   6.487 |
 
-### filter()
+### filter(criterion)
 filter filters a table based on an array of truthy or falsy values.
 If a value is truthy the row is in the final output;
+
+#### Arguments
+
+<b>criterion:</b> An arrray with the same length as the number of rows in the table. The values are interpreted for their truthiness. Values stay if they are truthy and get removed if theu are falsy.
 
 #### Example
 ```javascript
@@ -170,12 +176,18 @@ var mySelection = customers.filter([true, false, true, false, true,
 |           9 | GB      |    5.00 |
 
 ### where()
+
 Where is the sql familiar clause.
 A where clause takes either:
  - A comparison object or
  - A logical combination object.
 
+#### Arguments
+
+<b>expr:</b> expr must be either a logical comparison or a logical combination.
+
 #### Example
+
 ```javascript
 var highSpendersFromGb = customers.where(
     JSplyr.and(
@@ -193,7 +205,14 @@ var highSpendersFromGb = customers.where(
 group_by groups the table by its keys and puts all values that are not grouping keys into arrays.
 This allows map and reduce operations, that are embedded in scalar functions to operate on these arrays and aggregate data.
 
+If no grouping key is given the resulting table will have one row with all original rows combined. This just means, that getting a grand aggregate value is indeed possible.
+
+#### Arguments
+
+<b>...:</b> The arguments thos group_by are a list of 0 or more field names as strings.
+
 #### Example
+
 ```javascript
 var revByCountry = customers.group_by("country");
 ```
@@ -210,10 +229,16 @@ Flatten takes a field that is nested (usually by a group by operation) and unrav
 This operation can only be performed on one measure to avoid dangers of mismatching different elements inside of the arrays.
 It's main use is for when the flattened data was an array in the first place, not a result of grouping, or if grouped, the only field that was grouped.
 
+#### Arguments
+
+<b>field:</b> The field to be flattened supplied as a string.
+
 #### Example
+
 ```javascript
 revByCountry.flatten("rev");
 ```
+
 | Customer ID     | Country | Revenue |
 | ---------------:| ------- | -------:|
 | [1, 2, 4, 6, 9] | GB      |   19.99 |
@@ -230,6 +255,11 @@ revByCountry.flatten("rev");
 ### limit()
 Limit simply limit the amount of rows of the table.
 It takes an optional offset parameter and returns up to as many rows as specified in the limit.
+
+#### Arguments
+
+<b>llimit:</b> The number of rows to limit the output by. This is the number of natural rows. of the table. If content has been groped then a group is one row.
+<b>offset:</b> The number of rows to skip from the first row. This parameter is 0 based. An offset of 1 starts at the second row.
 
 #### Example
 ```javascript
@@ -254,6 +284,13 @@ Join supports all typical join types:
 
  Join creates a row for every match it finds (unlike for example a vlookup)
 
+#### Arguments
+
+<b>right:</b> The right table to be joined onto this table.
+<b>method:</b> The join method
+<b>lkeys:</b> An array containing a number of strings that indicate the field names of the left table to be joined by.
+<b>rkeys:</b> An rrays of the same length as lkeys containing the field names of the right table to be joined by.
+<b>empty:</b> The value to fill a row with if the join result is the equivalent of NULL. The default is `undefined.`
 
 #### Example
 ```javascript
@@ -285,16 +322,30 @@ A union has several strategies
  - 2 uses right columns
  - 3 uses all columns
 
+#### Arguments
+
+<b>t:</b> The table to be unioned onto the current table.
+<b>behavior:</b> The union strategy of which columns to use. Default is 0.
+<b>empty:</b> The default value to use if a column does not exist. Default is undefined.
+
+#### Example
+```javascript
+
+````
+
 ### order_by()
+
 order_by orders a table.
 It takes multiple Order expressions. In the case of a tied it wll go to the next field and see which row should come first.
+
+#### Arguments
+
+<b>...:</b> One or more Ordering objects that are either ascending or descending.
 
 #### Example
 ```javascript
 customers.order(JSplyr.asc("Country"), JSplyr.desc("Revenue"));
 ```
-
-TODO:
 
 | Customer ID | Country | Revenue |
 | -----------:| ------- | -------:|
