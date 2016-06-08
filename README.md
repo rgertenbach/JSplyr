@@ -363,10 +363,45 @@ customers.order(JSplyr.asc("Country"), JSplyr.desc("Revenue"));
 ## JSplyr expression constructors
 
 ### JSplyr.as
+as is used to indicate that a field should carry a different alias in a select statement.
+
+#### Arguments
+
+<b>field:</b> The name of the field in the current table
+<b>alias:</b> The name the field should have in the new resulting table
+
+
 ### JSplyr.fun
+fun is used to indicate a scalar function to be applied to a row
+
+#### Arguments
+
+<b>fun:</b> The function to be applied to each row
+<b>alias:</b> The name the field containing result should have in the resulting table
+<b>...:</b> Arguments supplied to the function in order of the declaration. If an argument supplied is a string that exists as a field name in the table then the field in the table is referenced. Otherwise the argument is taken as is.
+
 ### JSplyr.comp
-### JSplyr.an##d
+Creates a comparison between two fields
+
+#### Arguments
+
+<b>lop:</b> The left hand operand. This can be either a string with a field name as it exists in the current table or a fun object.
+<b>op:</b> Thee operand. This is either a string that is any of: ==, ===, !=, !==, >, <, >=, or <= to execute the expected comparison as a javascript one or it can be a function taking two arguments.
+<b>rop:</b> The right hand side operant, the same rules apply as for lop.
+
+### JSplyr.and
+A logical combination of the AND type of 0 or more logical comparisons and/or combinations
+
+#### Arguments
+<b>...:</b> 0 or more logical comparisons and/or combinations
+
 ### JSplyr.or
+A logical combination of the OR type of 0 or more logical comparisons and/or combinations
+
+#### Arguments
+<b>...:</b> 0 or more logical comparisons and/or combinations
+
+
 ### JSpyyr.not
 ### JSplyr.asc
 ### JSplyr.desc
