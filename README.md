@@ -325,7 +325,9 @@ A union has several strategies
 #### Arguments
 
 <b>t:</b> The table to be unioned onto the current table.
+
 <b>behavior:</b> The union strategy of which columns to use. Default is 0.
+
 <b>empty:</b> The default value to use if a column does not exist. Default is undefined.
 
 #### Example
@@ -368,6 +370,7 @@ as is used to indicate that a field should carry a different alias in a select s
 #### Arguments
 
 <b>field:</b> The name of the field in the current table
+
 <b>alias:</b> The name the field should have in the new resulting table
 
 
@@ -377,7 +380,9 @@ fun is used to indicate a scalar function to be applied to a row
 #### Arguments
 
 <b>fun:</b> The function to be applied to each row
+
 <b>alias:</b> The name the field containing result should have in the resulting table
+
 <b>...:</b> Arguments supplied to the function in order of the declaration. If an argument supplied is a string that exists as a field name in the table then the field in the table is referenced. Otherwise the argument is taken as is.
 
 ### JSplyr.comp
@@ -386,7 +391,9 @@ Creates a comparison between two fields
 #### Arguments
 
 <b>lop:</b> The left hand operand. This can be either a string with a field name as it exists in the current table or a fun object.
+
 <b>op:</b> Thee operand. This is either a string that is any of: ==, ===, !=, !==, >, <, >=, or <= to execute the expected comparison as a javascript one or it can be a function taking two arguments.
+
 <b>rop:</b> The right hand side operant, the same rules apply as for lop.
 
 ### JSplyr.and
@@ -403,21 +410,103 @@ A logical combination of the OR type of 0 or more logical comparisons and/or com
 
 
 ### JSpyyr.not
+A logical combination of the NOT type of a logical comparison or combination
+
+#### Arguments
+
+<b>comp:<b> A logical comparison or combination
+
 ### JSplyr.asc
+An instruction to order by a field ascendingly
+
+#### Arguments
+
+<b>field:</b> The name of a field or a fun object.
+
 ### JSplyr.desc
+An instruction to order by a field descendingly
+
+#### Arguments
+
+<b>field:</b> The name of a field or a fun object.
 
 ## JSplyr auxilliary functions
+
 ### JSplyr.range
+
+A python style range function that generates an array of numbers up to but not inclusing the limit.
+
+#### Arguments
+
+<b>a:</b> The value to iterate to 0 from is it is the only argument provided, otherwise the value to start from.
+
+<b>b:</b> The value to iterate to
+
+<c>c:</b> The size of the steps to be taken, default is 1, can be negative
+
 ### JSplyr.isObject
+Checks if a variable is a JSplyr object and optionally if it is of a certain JSplyr type.
+
+#### Argumnts
+
+<b>object:</b> The object in questions. If this is the only parameter provided the function will check if the object is a JSplyr Object.
+
+<b>name:</b> The name of the JSplyr object. If an object is a JSplr object its name property will be checked if this paraemter is provided.
+
 ### JSplyr.objectToArray
+Transforms an array like object into an actual array. Can be used to convert the parameters provided to a function into an array e.g. to be used with apply.
+
+#### Arguments
+
+<b>object:</b> The object to be converted into an array
+
 ### JSplyr.arrayAnd
+Entry-wise logical and of one or more arrays
+
+#### Arguments
+
+<b>...:</b> One or more Arrays whose joint truthiness will be evaluated
+
 ### JSplyr.arrayOr
+Entry-wise logical or of one or more arrays
+
+#### Arguments
+
+<b>...:</b> One or more Arrays whose joint truthiness will be evaluated
+
 ### JSplyr.arrayNot
+The logical not of an array of values.
+
+#### Arguments
+<b>x:</b> The array whose elements should be negated.
 
 ## Table auxilliary methods
-### rank
+
+### rankOrder
+Returns an array of the ascending rank  of the field values within the table.
+
+#### Arguments
+<b>field:</b> The field whose values are to rank
+
+<b>dense</b> Whether ties should be returned by themselves or whether each rank shouls be its own arrays with ties having multiple elements.
+
+
 ### is
+Is takes a logical comparison or combination and returns an array of true false values indicating whether a row of the table matches the criteria provided.
+
+#### Arguments
+<b>comp:</b> A logical comparison or combination object.
+
 ### toMatrix
+Creates a two dimensional array (An array of arrays) from the table.
+Every element of the array will be an array representing a row.
+The inner arrays have an element per column within that row.
+
 ### getFields
+The field names of the table in an array
+
 ### rows
+The number of rows of the table
+
 ### table (Object)
+The actual table object. contains the field names as keys and the values as arrays.
