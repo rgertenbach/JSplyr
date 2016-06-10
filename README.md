@@ -423,7 +423,7 @@ A logical combination of the NOT type of a logical comparison or combination
 
 #### Arguments
 
-<b>comp:<b> A logical comparison or combination
+<b>comp:</b> A logical comparison or combination
 
 ### JSplyr.asc
 An instruction to order by a field ascendingly
