@@ -362,6 +362,15 @@ customers.order(JSplyr.asc("Country"), JSplyr.desc("Revenue"));
 |           9 | GB      |    5.00 |
 |           8 | xx      |    0.10 |
 
+### add_column
+Adds a column to the table
+
+#### Arguments
+
+<b>values:</b> An array of values that will be the new column
+
+<b>alias:></b> The name the new field should have
+
 ## JSplyr expression constructors
 
 ### JSplyr.as
