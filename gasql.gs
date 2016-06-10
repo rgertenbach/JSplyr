@@ -740,6 +740,25 @@ JSplyr.createTable = function(table) {
     return JSplyr.createTable(output);
   }
 
+  /**
+   * Adds an array of values to the table as a new field
+   *
+   * @param {Array} values The array of values to be added
+   * @param {String} alias The name the new field should have
+   *
+   */
+  function addColumn(values, alias) {
+    if (!Array.isArray(values)) {
+      throw "First Argument must be an array";
+    }
+    if (values.length !== rows()) {
+      throw "Incompatible number of elements!";
+    }
+    output = table;
+    output[alias] = values;
+    return JSplyr.createTable(output);
+  }
+
 
   return {
     _JSplyrName: "table",
@@ -757,6 +776,7 @@ JSplyr.createTable = function(table) {
     limit: limit,
     where: where,
     order_by: order_by,
+    add_column: addColumn,
 
     rank: rankOrder,
     is: is
@@ -978,8 +998,6 @@ JSplyr.evaluateLogicalCombination = function(comb, target) {
 
 /**
  * A python style range generator
- *
- * @param
  */
 JSplyr.range = function(a, b, c) {
   var start, end, step;
