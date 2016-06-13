@@ -401,7 +401,7 @@ Creates a comparison between two fields
 
 <b>lop:</b> The left hand operand. This can be either a string with a field name as it exists in the current table or a fun object.
 
-<b>op:</b> Thee operand. This is either a string that is any of: ==, ===, !=, !==, >, <, >=, or <= to execute the expected comparison as a javascript one or it can be a function taking two arguments.
+<b>op:</b> Thee operand. This is either a string that is any of: ==, ===, !=, !==, >, <, >=, or <= to execute the expected comparison as a javascript one or it can be a function taking two arguments or it can be field name. If it is a field name every row of the table must contain a function that takes two arguments.
 
 <b>rop:</b> The right hand side operant, the same rules apply as for lop.
 
@@ -423,7 +423,7 @@ A logical combination of the NOT type of a logical comparison or combination
 
 #### Arguments
 
-<b>comp:</b> A logical comparison or combination
+<b>comp:<b> A logical comparison or combination
 
 ### JSplyr.asc
 An instruction to order by a field ascendingly
