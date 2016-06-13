@@ -181,7 +181,9 @@ JSplyr.createTable = function(table) {
    * Whether rows fulfil a criterion or not
    *
    * The function accepts either a string of a comparison such as == or > or
-   * a function. Due to the way JS evaluates truthiness any return value is ok.
+   * a function or a column reference;
+   * that column must contain a functio in every row!
+   * Due to the way JS evaluates truthiness any return value is ok.
    * The comperands can be field names, fun instances or literals.
    *
    * @param {Object} lop The left operand.
@@ -193,6 +195,8 @@ JSplyr.createTable = function(table) {
     var lop = comp.lop;
     var op = comp.op;
     var rop = comp.rop;
+    var fields = getFields();
+    var output = [];
 
     var operations = {
       "==":  function(l, r) {return l ==  r;},
@@ -207,12 +211,11 @@ JSplyr.createTable = function(table) {
 
     if (typeof(op) === "function") {
       operations[op] = op;
+    } else if (fields.indexOf(op) !== -1) {
+      operations[op] = table[op];
+    } else {
+      throw "Operator must be a function, JS comparison or a field reference!";
     }
-
-    var fields = getFields();
-    var lopf;
-    var ropf;
-    var output = [];
 
     function createComparator(side) {
       if (isIn(side, fields)) {
@@ -223,12 +226,15 @@ JSplyr.createTable = function(table) {
       return repeat(side, rows());
     }
 
-    lopf = createComparator(lop);
-    ropf = createComparator(rop);
+    var lopf = createComparator(lop);
+    var ropf = createComparator(rop);
 
     for (var row in lopf) {
-      output.push(operations[op](lopf[row], ropf[row]));
+      output.push((fields.indexOf(op) !== -1 ?
+          operations[op][row] :
+          operations[op])(lopf[row], ropf[row]));
     }
+
     return output;
   }
 
@@ -740,6 +746,7 @@ JSplyr.createTable = function(table) {
     return JSplyr.createTable(output);
   }
 
+
   /**
    * Adds an array of values to the table as a new field
    *
@@ -758,7 +765,6 @@ JSplyr.createTable = function(table) {
     output[alias] = values;
     return JSplyr.createTable(output);
   }
-
 
   return {
     _JSplyrName: "table",
