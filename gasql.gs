@@ -59,6 +59,21 @@ JSplyr.createTableFromMatrix = function(data) {
   return JSplyr.createTable(makeTable());
 };
 
+
+/**
+ * verifies whether an Object is a certain JSplyr object.
+ *
+ * @param {Object} object The object to be checked
+ * @param {string} name The name of the object to be checked. Blank checks
+ *                 if it has a _JSplyrName property (lame)
+ * @return {logical} Whether the object passes the test.
+ */
+JSplyr.isObject = function(object, name) {
+  if (!name) {return object.hasOwnProperty("_JSplyrName");}
+  return object._JSplyrName === name;
+};
+
+
 /**
  * An alias object that can be used instead of field names in selections.
  *
@@ -89,6 +104,7 @@ JSplyr.fun = function(fun, alias) {
   args.splice(0,2);
   return {_JSplyrName: "function", fun: fun, alias: alias, args: args};
 };
+
 
 /**
  * Logical and applied to a list of arrays.
@@ -152,6 +168,7 @@ JSplyr.objectToArray = function(object) {
   return Object.keys(object).map(function(key) {return object[key];});
 };
 
+
 /**
  * Return a comparison object
  *
@@ -163,20 +180,6 @@ JSplyr.objectToArray = function(object) {
 JSplyr.comp = function(lop, op, rop) {
   return {_JSplyrName: "comparison", lop: lop, op: op, rop: rop};
 }
-
-
-/**
- * verifies whether an Object is a certain JSplyr object.
- *
- * @param {Object} object The object to be checked
- * @param {string} name The name of the object to be checked. Blank checks
- *                 if it has a _JSplyrName property (lame)
- * @return {logical} Whether the object passes the test.
- */
-JSplyr.isObject = function(object, name) {
-  if (!name) {return object.hasOwnProperty("_JSplyrName");}
-  return object._JSplyrName === name;
-};
 
 
 /**
@@ -240,35 +243,13 @@ JSplyr.evaluateLogicalCombination = function(comb, target) {
 
 
 /**
- * A python style range generator
- */
-JSplyr.range = function(a, b, c) {
-  var start, end, step;
-  if (c === undefined && b === undefined) {
-    start = 0;
-    end = a;
-    step = 1;
-  } else {
-    start = a;
-    end = b;
-    step = c || 1;
-  }
-  var current = start;
-  var output = [];
-  while (current < end) {
-    output.push(current);
-    current += step;
-  }
-  return output;
-};
-
-/**
  * @param {Object} field a field name or fun instance.
  * @return {Object} an order orbject (ascending type)
  */
 JSplyr.asc = function(field) {
   return {_JSplyrName: "order param", type: "asc", field: field};
 }
+
 
 /**
  * @param {Object} field a field name or fun instance.
@@ -296,6 +277,30 @@ JSplyr.createOutput = function(fields) {
     }});
   return output;
 }
+
+
+/**
+ * A python style range generator
+ */
+JSplyr.range = function(a, b, c) {
+  var start, end, step;
+  if (c === undefined && b === undefined) {
+    start = 0;
+    end = a;
+    step = 1;
+  } else {
+    start = a;
+    end = b;
+    step = c || 1;
+  }
+  var current = start;
+  var output = [];
+  while (current < end) {
+    output.push(current);
+    current += step;
+  }
+  return output;
+};
 
 
 /**
@@ -375,6 +380,16 @@ JSplyr.Table.prototype.getFields = function() {
 
 
 /**
+ * The number of columns in the table
+ *
+ * @return {number} The number of columns in the table
+ */
+JSplyr.Table.prototype.cols = function() {
+  return this.getFields().length;
+}
+
+
+/**
  * The i-th row of a table
  *
  * @param {Number} i The row number to be retrieved (0-based).
@@ -387,16 +402,6 @@ JSplyr.Table.prototype.getRow = function(i) {
 
   var fields = this.getFields();
   return fields.map(function(field) {return this.table[field][i];});
-}
-
-
-/**
- * The number of columns in the table
- *
- * @return {number} The number of columns in the table
- */
-JSplyr.Table.prototype.cols = function() {
-  return this.getFields().length;
 }
 
 
@@ -450,6 +455,7 @@ JSplyr.Table.prototype.toMatrix = function() {
   }
   return output;
 }
+
 
 /**
  * Adds an array of values to the table as a new field
@@ -941,7 +947,6 @@ JSplyr.Table.prototype.join = function(right, method, lKeys, rKeys, empty) {
   }
   return results;
 }
-
 
 
 /**
