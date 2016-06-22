@@ -1,294 +1,27 @@
 JSplyr = Object.create(null);
 
+
+/**
+ * CConstructor for table objects
+ *
+ * The table has a table attribute with is an object with field names as keys.
+ * The values are arrays containing the rows of each column.
+ *
+ * @param {Object} table The object that will be the table propertt.
+ * @returns {Table} The table with methods to work with instances of itself.
+ */
 JSplyr.Table = function(table) {
   this.table = table;
 };
 
 
 /**
- * Creates a table.
- *
- * The table has a table attribute with is an object with field names as keys.
- * The values are arrays containing the rows of each column.
+ * Table Wrapper for Objcts
  *
  * @param {Object} table The object that will be the table propertt.
- * @returns {Object} The table with methods to work with instances of itself.
+ * @returns {Table} The table with methods to work with instances of itself.
  */
 JSplyr.createTable = function(table) {
-  /**
-   * Joins two tables with one another
-   *
-   * Legal join strategies are:
-   *  - "inner": Only rows that have matches are used.
-   *  - "left": Inner join + unmatches left rows.
-   *  - "right" Inner join + unmatched right rows.
-   *  - "outer": Inner join and unmatched left and right rows.
-   *  - "cross": cross product of every row of the two tables.
-   *             If a cross join is used no keys are necessary.
-   *
-   * @param {table} right The right side of the join
-   * @param {string} method The join strategy, see detailed description
-   * @param {Object} lkeys Array containing the names of the left table's keys,
-                     or a single key string.
-   * @param {Object} rkeys Array containing the names of the right table's keys,
-                     or a single key string.
-   * @param {Object} empty The value to fill fields with that have no match.
-   * @return {createTable} a Table that is the join result of the two tables.
-   */
-  function join(right, method, lKeys, rKeys, empty) {
-    var allowed_methods = ["inner", "left", "right", "outer", "cross"]
-    method = method || "inner";
-
-    if (!JSplyr.isObject(right, "table")) {throw "First argument must be table!";}
-    if (!isIn(method, allowed_methods)) {
-      throw "Second argument must be one of" + allowed_methods
-    }
-    if (typeof(lKeys) === "string") {lKeys = [lKeys];}
-    if (typeof(rKeys) === "string") {rKeys = [rKeys];}
-    if (method !== "cross" && lKeys.length !== rKeys.length) {
-      throw "Join key lists must have same length!";
-    }
-
-    var lFields = getFields();
-    var rFields = right.getFields();
-
-    var oFields = lFields.map(function(f) {return "l." + f;}).concat(
-                  rFields.map(function(f) {return "r." + f;}));
-
-    function methodIn(methods) {
-      return isIn(method, methods);
-    }
-
-    function fillFields(table, fields, row, prefix) {
-      prefix = prefix || "";
-      fields.map(function(field) {
-        output[prefix + field].push(table[field][row]);
-      });
-    }
-
-    function matchTables(l, r, lKeys, rKeys) {
-      var matches = [];
-      var lFields = l.getFields();
-      var rFields = r.getFields();
-
-      function rowsMatch() {
-        for (var key in lKeys) {
-          if (l.table[lKeys[key]][lRow] !== r.table[rKeys[key]][rRow]) {
-            return false;
-          }
-        }
-        return true;
-      }
-
-      for (var lRow in l.table[lFields[0]]) {
-        matches.push([]);
-        for (var rRow in r.table[rKeys[0]]) {
-          if (rowsMatch()) {
-            matches[lRow].push(rRow);
-          }
-        }
-      }
-      return matches;
-    }
-
-    function getRow(table, row, fields) {
-      var fields = fields || table.getFields();
-      var output = fields.map(function(field) {
-        return table.table[field][row];
-      });
-      return output;
-    }
-
-    function constructJoin(l, r, matches, nonMatches, reverse) {
-      nonMatches = nonMatches || false;
-      reverse = reverse || false;
-      var output  = createOutput(oFields);
-      var lFields = l.getFields();
-      var rFields = r.getFields();
-      if (reverse) {
-        oFields = lFields.map(function(f) {return "r." + f;}).concat(
-          rFields.map(function(f) {return "l." + f;})
-        );
-      }
-
-      function pushRow() {
-        for (var field in oFields) {
-          output[oFields[field]].push(leftData.concat(rightData)[field]);
-        }
-      }
-
-      for (var lRow in matches) {
-        var leftData = getRow(l, lRow, lFields);
-        if (matches[lRow].length > 0 && !nonMatches) {
-          for (var match in matches[lRow]) {
-            var rightData = getRow(r, matches[lRow][match], rFields);
-            pushRow()
-          }
-        } else if(matches[lRow].length === 0 && nonMatches) {
-          var rightData = repeat(empty, oFields.length);
-          pushRow();
-        }
-      }
-      return output;
-    }
-
-    if (methodIn(["inner", "left", "outer"])) {
-      var lMatches = matchTables(this, right, lKeys, rKeys);
-    }
-    if (methodIn(["right", "outer"])) {
-      var rMatches = matchTables(right, this, rKeys, lKeys);
-    }
-    if (methodIn(["cross"])) {
-      var lMatches = [];
-      for (var lRow = 0; lRow < rows(); lRow++) {
-        lMatches.push([]);
-        for (var rRow = 0; rRow < right.rows(); rRow++) {
-          lMatches[lRow].push(rRow);
-        }
-      }
-    }
-
-    var results;
-    // Inner matches
-    if (!methodIn(["right"])) {
-      results = JSplyr.createTable(constructJoin(this, right, lMatches));
-    } else {
-      results = JSplyr.createTable(constructJoin(right, this, rMatches, false, true));
-    }
-
-    if (methodIn(["left", "outer", "cross"])) {
-      var b = JSplyr.createTable(constructJoin(this, right, lMatches, true));
-      results = results.union(b);
-    }
-
-    if (methodIn(["right", "outer"])) {
-      var b = JSplyr.createTable(constructJoin(right, this, rMatches, true, true));
-      results = results.union(b);
-    }
-    return results;
-  }
-
-
-  /**
-   * Returns the row indices of the ascendingly ranked field
-   *
-   * @param {Object} field A fieldname or fun object.
-   * @param {logical} dense Whether same values should get the same rank or not.
-  *                   This is obviously needed for sorting by multiple columns.
-   * @return {Array} An array of the row numbers (0-based).
-   */
-  function rankOrder(field, dense) {
-    dense = dense || true;
-    if (!JSplyr.isObject(field, "order param")) {
-      throw "Order param not an order object!";
-    }
-
-    if (JSplyr.isObject(field.field, "function")) {
-      var col = applyScalar(fied.field);
-    } else {
-      var col = table[field.field];
-    }
-
-    function minIndex() {
-      return indices.reduce(function(y, x) {
-        return (col[x] < col[y] ?
-          (field.type === "desc" ? y : x) :
-          (field.type === "desc" ? x : y));
-      });
-    }
-
-    function getNext() {
-      var minVal = minIndex();
-      var index = indices.splice(indices.indexOf(minVal), 1)[0];
-      return index;
-    }
-
-    function lastValue() {
-      return col[ranks[ranks.length - 1][0]];
-    }
-
-    var indices = JSplyr.range(col.length);
-    var ranks = [];
-
-    while (indices.length > 0) {
-      var minValue = minIndex();
-      var next = getNext();
-
-      if (ranks.length !== 0 && lastValue() === col[next] && dense) {
-        ranks[ranks.length - 1].push(next);
-      } else {
-        ranks.push([next]);
-      }
-    }
-    return ranks;
-  }
-
-  /**
-   * Orders a table by the fields provided.
-   */
-  function order_by() {
-    var args = JSplyr.objectToArray(arguments);
-    args.map(function(arg) {
-      if (!JSplyr.isObject(arg, "order param")) {
-        throw "One of the arguments is not an order object!";
-      }});
-
-    var cols = args.map(function(arg) {
-      if (JSplyr.isObject(arg.field, "function")) {
-        return applyScalar(arg.field);
-      } else {
-        return table[arg.field];
-      }
-    });
-
-    var indices = JSplyr.range(rows());
-    var ranks = [];
-
-
-    /*
-     * Finds the index of the value that comes next.
-     * Calls itself recursively if needed.
-     */
-    function findMinI(colI) {
-      var order = args[colI].type;
-      var minVal = indices.map(function(i) {
-        return cols[colI][i];
-      }).reduce(function(x,y) {
-        return  x < y ?
-          (order == "asc" ? x : y) :
-          (order == "asc" ? y : x);
-      });
-
-      var minValIndices = indices.filter(function(i) {
-        return cols[colI][i] === minVal;
-      });
-
-      if (minValIndices.length === 1 || colI === cols.length - 1) {
-        return minValIndices[0];
-      } else {
-        return findMinI(colI + 1);
-      }
-    }
-
-    var ranks = [];
-    while (indices.length > 0) {
-      var minIndex = findMinI(0);
-      var minIndexPos = indices.indexOf(minIndex);
-      var minI = indices.splice(minIndexPos, 1)[0];
-      ranks.push(minI)
-    }
-
-    var fields = getFields();
-    var output = createOutput(fields);
-    ranks.map(function(rank) {
-      fields.map(function(field) {
-        output[field].push(table[field][rank]);
-      })
-    });
-
-    return JSplyr.createTable(output);
-  }
-
   var output = new JSplyr.Table(table)
   return output;
 };
@@ -302,7 +35,7 @@ JSplyr.createTable = function(table) {
  * Each element of the inner arrays is a column in that row.
  *
  * @param {Array} data The 2d array to be converted into a table.
- * @return {createTable} The input as a table instance.
+ * @return {Table} The input as a table instance.
  */
 JSplyr.createTableFromMatrix = function(data) {
   function verify2dArray() {
@@ -682,7 +415,7 @@ JSplyr.Table.prototype.rows = function() {
  *
  * @param {Number} limit The number of rows.
  * @param {Number} offset The number of rows from the first at which to start.
- * @return {createObject} the truncated table.
+ * @return {Table} the truncated table.
  */
 JSplyr.Table.prototype.limit = function(limit, offset) {
   offset = offset || 0;
@@ -723,7 +456,7 @@ JSplyr.Table.prototype.toMatrix = function() {
  *
  * @param {Array} values The array of values to be added
  * @param {String} alias The name the new field should have
- *
+ * ~return {Table} The Table with the new column
  */
 JSplyr.Table.prototype.addColumn = function (values, alias) {
   if (!Array.isArray(values)) {
@@ -744,7 +477,7 @@ JSplyr.Table.prototype.addColumn = function (values, alias) {
  * Takes either field names, As Aliases or Fun Functions.
  *
  * @param {...} ... A list of arguments.
- * @return {createTable} An instance of a table with the selected fields.
+ * @return {Table} An instance of a table with the selected fields.
  */
 JSplyr.Table.prototype.select = function() {
   var fields = JSplyr.objectToArray(arguments);
@@ -918,7 +651,7 @@ JSplyr.Table.prototype.where = function(expr) {
  * @param {createTable} t The table to be unioned with.
  * @param {number} behavior Which columns are to be selected.
  * @param {Object} empty The value missing columns shall be filled with.
- * @return {createTable} The union of two tables.
+ * @return {Table} The union of two tables.
  */
 JSplyr.Table.prototype.union = function(t, behavior, empty) {
   behavior = behavior || 0;
@@ -971,7 +704,7 @@ JSplyr.Table.prototype.union = function(t, behavior, empty) {
  * The non grouping fields will be nested in arrays.
  *
  * @param {String} ... The field names to be grouped by.
- * @return {createTable} The nested table.
+ * @return {Table} The nested table.
  */
 JSplyr.Table.prototype.group_by = function() {
   var groups = JSplyr.objectToArray(arguments);
@@ -1026,7 +759,7 @@ JSplyr.Table.prototype.group_by = function() {
 /**
  * flatten unnests an array.
  * @param {string} field The nested field to be unnested.
- * @return {createTable} The flattened table.
+ * @return {Table} The flattened table.
  */
 JSplyr.Table.prototype.flatten = function(field) {
   var fields = this.getFields();
@@ -1052,5 +785,282 @@ JSplyr.Table.prototype.flatten = function(field) {
       appendRow(row, element, this);
     }
   }
+  return JSplyr.createTable(output);
+}
+
+
+/**
+ * Joins two tables with one another
+ *
+ * Legal join strategies are:
+ *  - "inner": Only rows that have matches are used.
+ *  - "left": Inner join + unmatches left rows.
+ *  - "right" Inner join + unmatched right rows.
+ *  - "outer": Inner join and unmatched left and right rows.
+ *  - "cross": cross product of every row of the two tables.
+ *             If a cross join is used no keys are necessary.
+ *
+ * @param {table} right The right side of the join
+ * @param {string} method The join strategy, see detailed description
+ * @param {Object} lkeys Array containing the names of the left table's keys,
+                   or a single key string.
+ * @param {Object} rkeys Array containing the names of the right table's keys,
+                   or a single key string.
+ * @param {Object} empty The value to fill fields with that have no match.
+ * @return {Table} a Table that is the join result of the two tables.
+ */
+JSplyr.Table.prototype.join = function(right, method, lKeys, rKeys, empty) {
+  var allowed_methods = ["inner", "left", "right", "outer", "cross"]
+  method = method || "inner";
+
+  if (!JSplyr.isObject(right, "Table")) {throw "First argument must be table!";}
+  if (!JSplyr.isIn(method, allowed_methods)) {
+    throw "Second argument must be one of" + allowed_methods
+  }
+  if (typeof(lKeys) === "string") {lKeys = [lKeys];}
+  if (typeof(rKeys) === "string") {rKeys = [rKeys];}
+  if (method !== "cross" && lKeys.length !== rKeys.length) {
+    throw "Join key lists must have same length!";
+  }
+
+  var lFields = this.getFields();
+  var rFields = right.getFields();
+
+  var oFields = lFields.map(function(f) {return "l." + f;}).concat(
+                rFields.map(function(f) {return "r." + f;}));
+
+  function methodIn(methods) {
+    return JSplyr.isIn(method, methods);
+  }
+
+  function fillFields(table, fields, row, prefix) {
+    prefix = prefix || "";
+    fields.map(function(field) {
+      output[prefix + field].push(table[field][row]);
+    });
+  }
+
+  function matchTables(l, r, lKeys, rKeys) {
+    var matches = [];
+    var lFields = l.getFields();
+    var rFields = r.getFields();
+
+    function rowsMatch() {
+      for (var key in lKeys) {
+        if (l.table[lKeys[key]][lRow] !== r.table[rKeys[key]][rRow]) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    for (var lRow in l.table[lFields[0]]) {
+      matches.push([]);
+      for (var rRow in r.table[rKeys[0]]) {
+        if (rowsMatch()) {
+          matches[lRow].push(rRow);
+        }
+      }
+    }
+    return matches;
+  }
+
+  function getRow(table, row, fields) {
+    var fields = fields || table.getFields();
+    var output = fields.map(function(field) {
+      return table.table[field][row];
+    });
+    return output;
+  }
+
+  function constructJoin(l, r, matches, nonMatches, reverse) {
+    nonMatches = nonMatches || false;
+    reverse = reverse || false;
+    var output  = JSplyr.createOutput(oFields);
+    var lFields = l.getFields();
+    var rFields = r.getFields();
+    if (reverse) {
+      oFields = lFields.map(function(f) {return "r." + f;}).concat(
+        rFields.map(function(f) {return "l." + f;})
+      );
+    }
+
+    function pushRow() {
+      for (var field in oFields) {
+        output[oFields[field]].push(leftData.concat(rightData)[field]);
+      }
+    }
+
+    for (var lRow in matches) {
+      var leftData = getRow(l, lRow, lFields);
+      if (matches[lRow].length > 0 && !nonMatches) {
+        for (var match in matches[lRow]) {
+          var rightData = getRow(r, matches[lRow][match], rFields);
+          pushRow()
+        }
+      } else if(matches[lRow].length === 0 && nonMatches) {
+        var rightData = JSplyr.repeat(empty, oFields.length);
+        pushRow();
+      }
+    }
+    return output;
+  }
+
+  if (methodIn(["inner", "left", "outer"])) {
+    var lMatches = matchTables(this, right, lKeys, rKeys);
+  }
+  if (methodIn(["right", "outer"])) {
+    var rMatches = matchTables(right, this, rKeys, lKeys);
+  }
+  if (methodIn(["cross"])) {
+    var lMatches = [];
+    for (var lRow = 0; lRow < this.rows(); lRow++) {
+      lMatches.push([]);
+      for (var rRow = 0; rRow < right.rows(); rRow++) {
+        lMatches[lRow].push(rRow);
+      }
+    }
+  }
+
+  var results;
+  // Inner matches
+  if (!methodIn(["right"])) {
+    results = JSplyr.createTable(constructJoin(this, right, lMatches));
+  } else {
+    results = JSplyr.createTable(constructJoin(right, this, rMatches, false, true));
+  }
+
+  if (methodIn(["left", "outer", "cross"])) {
+    var b = JSplyr.createTable(constructJoin(this, right, lMatches, true));
+    results = results.union(b);
+  }
+
+  if (methodIn(["right", "outer"])) {
+    var b = JSplyr.createTable(constructJoin(right, this, rMatches, true, true));
+    results = results.union(b);
+  }
+  return results;
+}
+
+
+
+/**
+ * Returns the row indices of the ascendingly ranked field
+ *
+ * @param {Object} field A fieldname or fun object.
+ * @param {logical} dense Whether same values should get the same rank or not.
+*                   This is obviously needed for sorting by multiple columns.
+ * @return {Array} An array of the row numbers (0-based).
+ */
+JSplyr.Table.prototype.rankOrder = function(field, dense) {
+  dense = dense || true;
+  if (!JSplyr.isObject(field, "order param")) {
+    throw "Order param not an order object!";
+  }
+
+  if (JSplyr.isObject(field.field, "function")) {
+    var col = this.applyScalar(fied.field);
+  } else {
+    var col = this.table[field.field];
+  }
+
+  function minIndex() {
+    return indices.reduce(function(y, x) {
+      return (col[x] < col[y] ?
+        (field.type === "desc" ? y : x) :
+        (field.type === "desc" ? x : y));
+    });
+  }
+
+  function getNext() {
+    var minVal = minIndex();
+    var index = indices.splice(indices.indexOf(minVal), 1)[0];
+    return index;
+  }
+
+  function lastValue() {
+    return col[ranks[ranks.length - 1][0]];
+  }
+
+  var indices = JSplyr.range(col.length);
+  var ranks = [];
+
+  while (indices.length > 0) {
+    var minValue = minIndex();
+    var next = getNext();
+
+    if (ranks.length !== 0 && lastValue() === col[next] && dense) {
+      ranks[ranks.length - 1].push(next);
+    } else {
+      ranks.push([next]);
+    }
+  }
+  return ranks;
+}
+
+
+/**
+* Orders a table by the fields provided.
+*/
+JSplyr.Table.prototype.order_by = function() {
+  var args = JSplyr.objectToArray(arguments);
+  args.map(function(arg) {
+    if (!JSplyr.isObject(arg, "order param")) {
+      throw "One of the arguments is not an order object!";
+    }});
+
+  var cols = args.map(function(arg) {
+    if (JSplyr.isObject(arg.field, "function")) {
+      return applyScalar(arg.field);
+    } else {
+      return this.table[arg.field];
+    }
+  }, this);
+
+  var indices = JSplyr.range(this.rows());
+  var ranks = [];
+
+
+  /*
+   * Finds the index of the value that comes next.
+   * Calls itself recursively if needed.
+   */
+  function findMinI(colI) {
+    var order = args[colI].type;
+    var minVal = indices.map(function(i) {
+      return cols[colI][i];
+    }).reduce(function(x,y) {
+      return  x < y ?
+        (order == "asc" ? x : y) :
+        (order == "asc" ? y : x);
+    });
+
+    var minValIndices = indices.filter(function(i) {
+      return cols[colI][i] === minVal;
+    });
+
+    if (minValIndices.length === 1 || colI === cols.length - 1) {
+      return minValIndices[0];
+    } else {
+      return findMinI(colI + 1);
+    }
+  }
+
+  var ranks = [];
+  while (indices.length > 0) {
+    var minIndex = findMinI(0);
+    var minIndexPos = indices.indexOf(minIndex);
+    var minI = indices.splice(minIndexPos, 1)[0];
+    ranks.push(minI)
+  }
+
+  var fields = this.getFields();
+  var output = JSplyr.createOutput(fields);
+  ranks.map(function(rank) {
+    fields.map(function(field) {
+      output[field].push(this.table[field][rank]);
+    }, this)
+  }, this);
+
   return JSplyr.createTable(output);
 }
