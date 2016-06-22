@@ -1,5 +1,10 @@
 JSplyr = Object.create(null);
 
+JSplyr.Table = function(table) {
+  this.table = table;
+};
+
+
 /**
  * Creates a table.
  *
@@ -10,439 +15,6 @@ JSplyr = Object.create(null);
  * @returns {Object} The table with methods to work with instances of itself.
  */
 JSplyr.createTable = function(table) {
-  /**
-   * Repeats a value n times
-   *
-   * @param {Object} x The object to be repeated.
-   * @param {number} n The number of repetitions.
-   * @return {Array} An array of size n filled with copies of x.
-   */
-  function repeat(x, n) {
-    if (!(typeof(n) === "number" && n >= 0 && n % 1 === 0)) {
-      throw "n must be an integer greater or than equal to 0"
-    }
-    var output = [];
-    while (n > 0) {
-      output.push(x);
-      n--;
-    }
-    return output;
-  }
-
-  /**
-   * Recursively checks if two arrays are identical
-   */
-  function equalArrays(a1, a2) {
-    if (!(Array.isArray(a1) && Array.isArray(a2))) {return false;}
-    if (a1.length !== a2.length) {return false;}
-    for (var i in a1) {
-      if (Array.isArray(a1[i])) {
-        if (!equalArrays(a1[i], a2[i])) {return false;jj}
-      } else {
-        if (a1[i] !== a2[i]) {return false;}
-      }
-    }
-    return true;
-  }
-
-  /**
-   * Whether or not x is in array y
-   *
-   * @param {Object} x The object to be looked for
-   * @param {Array} y The array to be searched
-   * @return {logical} Whether x could be found in y.
-   */
-  function isIn(x, y) {
-    return y.indexOf(x) !== -1;
-  }
-
-  /**
-   * Returns unique entries from an array.
-   *
-   * @param {Array} a The array to be deduped.
-   * @return {Array} An array with unique values.
-   */
-  function unique(a) {
-    if(!Array.isArray(a)) {throw "Argument must be an array!";}
-    var output = [];
-    a.map(function(e) {if (!isIn(e, output)) {output.push(e);}});
-    return output;
-  }
-
-  /**
-   * Creates an object with field names as keys and empty arrays as values.
-   *
-   * @param {Array} fields An array of field names.
-   * @return {Object} The object with the field names as keys and empty arrays.
-   */
-  function createOutput(fields) {
-    if(!Array.isArray(fields)) {throw "Argument must be an array!";}
-    var output = {};
-    fields.map(function (field) {
-      if (typeof(field) == "string") {
-        output[field] = [];
-      } else {
-        output[field.alias] = [];
-      }});
-    return output;
-  }
-
-  /**
-   * Creates a two dimensional array from the table.
-   *
-   * The table part gets returned as an array of equal length arrays.
-   * Each array is a row and each element in the sub arrays a column within it.
-   * The keys of the table object for into the first row.
-   *
-   * @returns {Array} An array of arrays containing the table.
-   */
-  function toMatrix() {
-    var output = [[]];
-    var fields = getFields();
-    fields.map(function(field) {output[0].push(field);})
-    for (var row in table[fields[0]]) {
-      output.push(fields.map(function(field) {return table[field][row]}));
-    }
-    return output;
-  }
-
-  /**
-   * Applies a Fun object to a table
-   *
-   * @param {Fun} fun A Fun object.
-   * @return {Array} Returns an array of the results, one element per row.
-   */
-  function applyScalar(fun) {
-    if (!JSplyr.isObject(fun, "function")) {
-      throw "Must provide a Fun Object!";
-    }
-    var fields = getFields();
-    var r = rows();
-    var args = fun.args.map(function(arg) {
-      if (!isIn(arg, fields)) {
-        return repeat(arg, r);
-      } else {
-        return table[arg];
-      }
-    });
-
-    var output = [];
-    var currentArgs;
-    for (var row = 0; row < r; row++) {
-      currentArgs = args.map(function(arg) {return arg[row];});
-      output.push(fun.fun.apply(this, currentArgs));
-    }
-    return output;
-  }
-
-  /**
-   * Field names of the Table
-   *
-   * @return {Array} An array of the field names of the table.
-   */
-  function getFields() {
-    return Object.keys(table);
-  }
-
-  /**
-   * The i-th row of a table
-   *
-   * @param {Number} i The row number to be retrieved (0-based).
-   * @return {Array} An array of the values in the i-th row.
-   */
-  function getRow(i) {
-    if (!(i % 1 !== 0 && i >= 0)) {
-      throw "row must be an integer greatern than or equal to 0";
-    }
-
-    var fields = getFields();
-    return fields.map(function(field) {return table[field][i];});
-  }
-
-  /**
-   * The number of columns in the table
-   *
-   * @return {number} The number of columns in the table
-   */
-  function cols() {
-    return getFields().length;
-  }
-
-  /**
-   * The number of rows in the table
-   *
-   * @return {number} The number of rows in the table.
-   */
-  function rows() {
-    return table[getFields()[0]].length;
-  }
-
-  /**
-   * Whether rows fulfil a criterion or not
-   *
-   * The function accepts either a string of a comparison such as == or > or
-   * a function or a column reference;
-   * that column must contain a functio in every row!
-   * Due to the way JS evaluates truthiness any return value is ok.
-   * The comperands can be field names, fun instances or literals.
-   *
-   * @param {Object} lop The left operand.
-   * @param {Object} op The operand.
-   * @param {Object} rop The right operand.
-   * @return {Array} An array of booleans or values that will be used as such.
-   */
-  function is(comp) {
-    var lop = comp.lop;
-    var op = comp.op;
-    var rop = comp.rop;
-    var fields = getFields();
-    var output = [];
-
-    var operations = {
-      "==":  function(l, r) {return l ==  r;},
-      "===": function(l, r) {return l === r;},
-      ">":   function(l, r) {return l >   r;},
-      "<":   function(l, r) {return l <   r;},
-      ">=":  function(l, r) {return l >=  r;},
-      "<=":  function(l, r) {return l <=  r;},
-      "!=":  function(l, r) {return l !=  r;},
-      "!==": function(l, r) {return l !== r;}
-    };
-
-    if (typeof(op) === "function") {
-      operations[op] = op;
-    } else if (fields.indexOf(op) !== -1) {
-      operations[op] = table[op];
-    } else {
-      throw "Operator must be a function, JS comparison or a field reference!";
-    }
-
-    function createComparator(side) {
-      if (isIn(side, fields)) {
-        return table[side];
-      } if (JSplyr.isObject(side, "function")) {
-        return applyScalar(side)
-      }
-      return repeat(side, rows());
-    }
-
-    var lopf = createComparator(lop);
-    var ropf = createComparator(rop);
-
-    for (var row in lopf) {
-      output.push((fields.indexOf(op) !== -1 ?
-          operations[op][row] :
-          operations[op])(lopf[row], ropf[row]));
-    }
-
-    return output;
-  }
-
-  /**
-   * Selects a list of fields from the existing table.
-   *
-   * Takes either field names, As Aliases or Fun Functions.
-   *
-   * @param {...} ... A list of arguments.
-   * @return {createTable} An instance of a table with the selected fields.
-   */
-  function select() {
-    var fields = JSplyr.objectToArray(arguments);
-
-    //verify fields exist
-    var tableFields = getFields();
-    fields.map(function(field) {
-      if (isIn(field, ["object", "string"])) {
-        throw "Wrong argument type";
-      }
-
-      if (typeof(field) === "string") {
-        if (!isIn(field, tableFields) && field !== "*") {
-          throw field + "is not a field of this table";
-        }
-      }
-    });
-
-    var output = {};
-    fields.map(function (field) {
-      if (typeof(field) == "string") {
-      output[field] = table[field];
-    } else if (JSplyr.isObject(field, "function")) {
-      output[field.alias] = applyScalar(field);
-    } else {
-      output[field.alias] = table[field.field];
-    }
-    });
-    return JSplyr.createTable(output);
-  }
-
-  /**
-   * Filters a table's rows.
-   *
-   * @param {Array} criterion An array of boolean values, one for each row.
-   * @return {createTable} The resulting filtered table.
-   */
-  function filter(criterion) {
-    var fields = getFields();
-    var output = createOutput(fields);
-
-    for (var row in criterion) {
-      if (criterion[row]) {
-        fields.map(function(field) {
-          output[field].push(table[field][row]);
-        });
-      }
-    }
-    return JSplyr.createTable(output);
-  }
-
-  /**
-   * Creates the union all of to tables.
-   *
-   * Behavior of behavior:
-   *  - undefined or 0 uses only common columns
-   *  - 1 uses only left columns
-   *  - 2 uses right columns
-   *  - 3 uses all columns
-   *
-   * @param {createTable} t The table to be unioned with.
-   * @param {number} behavior Which columns are to be selected.
-   * @param {Object} empty The value missing columns shall be filled with.
-   * @return {createTable} The union of two tables.
-   */
-  function union(t, behavior, empty) {
-    behavior = behavior || 0;
-
-    var lfields = getFields();
-    var rfields = t.getFields();
-    var fields;
-
-    if (behavior == 0) {
-      fields = lfields.filter(function(lField) {
-        return isIn(lField, rfields);
-      })
-    }
-    if (behavior == 1) {fields = lfields;}
-    if (behavior == 2) {fields = rfields;}
-    if (behavior == 3) {fields = unique(lfields.concat(rfields));}
-
-    var output = createOutput(fields);
-
-    // Check if any of the fields of the left table are in the final table
-    // To see if missing values need to be filled up
-    function fillUpNeeded(unionPartFields) {
-      return unionPartFields.map(function(field) {
-        return isIn(field, fields);}).reduce(function(a,b) {
-          return a || b;});
-    }
-
-    function appendRows(source, field, unionPartfields, needsFillUp) {
-      if (isIn(field, unionPartfields)) {
-        output[field] = output[field].concat(source[field]);
-      } else if (needsFillUp) {
-        output[field] = output[field].concat(repeat(empty, rows()));
-      }
-    }
-
-    var lfillupNeeded = fillUpNeeded(lfields);
-    var rfillupNeeded = fillUpNeeded(rfields);
-
-    fields.map(function(field) {
-      appendRows(table, field, lfields, lfillupNeeded)
-      appendRows(t.table, field, rfields, rfillupNeeded)
-    });
-    return JSplyr.createTable(output);
-  }
-
-  /**
-   * Groups a table by a list of field names by nesting non grouping fields.
-   *
-   * The non grouping fields will be nested in arrays.
-   *
-   * @param {String} ... The field names to be grouped by.
-   * @return {createTable} The nested table.
-   */
-  function group_by() {
-    var groups = JSplyr.objectToArray(arguments);
-    fields = getFields();
-
-    groups.map(function(arg) {
-      if (!isIn(arg, fields)) {throw arg + "not found!";}
-    })
-
-    var fields = getFields();
-    var currentRow;
-    var nested = createOutput(fields);
-
-    function getRow(table, row, target) {
-      var fields = Object.keys(table);
-      fields = fields.filter(function(f) {return isIn(f, target);});
-      return fields.map(function(field) {
-        return table[field][row];
-      });
-    }
-
-    function findMatchingRow(currentRow) {
-      for (var oRow in nested[fields[0]]) {
-        var checkRow = getRow(nested, oRow, groups);
-        if (equalArrays(currentRow, checkRow)) {
-          return oRow;
-        }
-      }
-      return -1
-    }
-
-    function appendRow(row) {
-      fields.map(function(field) {
-        var cell = table[field][iRow];
-        if (found !== -1 && !isIn(field, groups)) {
-          nested[field][found].push(cell);
-        } else if (found === -1) {
-          nested[field].push(isIn(field, groups) ? cell : [cell]);
-        }
-      });
-    }
-
-    // Create a nested version of the table
-    for (var iRow in table[fields[0]]) {
-      currentRow = getRow(table, iRow, groups);
-      var found = findMatchingRow(currentRow);
-      appendRow(found);
-    }
-    return JSplyr.createTable(nested);
-  }
-
-  /**
-   * flatten unnests an array.
-   * @param {string} field The nested field to be unnested.
-   * @return {createTable} The flattened table.
-   */
-  function flatten(field) {
-    var fields = getFields();
-
-    if (!isIn(field, fields)) {throw field + " is not a valid field name!";}
-    var column = table[field];
-    if(!Array.isArray(column[0])) {throw field + " is not a nested field!";}
-    var output = createOutput(fields);
-
-    function appendRow(row, element) {
-      fields.map(function(f) {
-        if (f === field) {
-          output[f].push(column[row][element]);
-        } else {
-          output[f].push(table[f][row]);
-        }
-      })
-    }
-
-    for (var row in column) {
-      for (var element in column[row]) {
-        appendRow(row, element);
-      }
-    }
-    return JSplyr.createTable(output);
-  }
-
   /**
    * Joins two tables with one another
    *
@@ -596,35 +168,6 @@ JSplyr.createTable = function(table) {
     return results;
   }
 
-  /**
-   * Limits the output starting at a given offset or the first row.
-   *
-   * @param {Number} limit The number of rows.
-   * @param {Number} offset The number of rows from the first at which to start.
-   * @return {createObject} the truncated table.
-   */
-  function limit(limit, offset) {
-    offset = offset || 0;
-    var fields = getFields();
-    var output = createOutput(fields);
-
-    fields.map(function(field) {
-      output[field] = table[field].splice(offset, limit);
-    });
-    return JSplyr.createTable(output);
-  }
-
-
-  function where(expr) {
-    if (JSplyr.isObject(expr, "comparison")) {
-      return this.filter(this.is.apply(this, expr));
-    } else if(JSplyr.isObject(expr, "logical combination")) {
-      return this.filter(JSplyr.evaluateLogicalCombination(expr, this))
-    } else {
-      throw "Expression must be a comparison or logical combination!";
-    }
-  }
-
 
   /**
    * Returns the row indices of the ascendingly ranked field
@@ -746,47 +289,8 @@ JSplyr.createTable = function(table) {
     return JSplyr.createTable(output);
   }
 
-
-  /**
-   * Adds an array of values to the table as a new field
-   *
-   * @param {Array} values The array of values to be added
-   * @param {String} alias The name the new field should have
-   *
-   */
-  function addColumn(values, alias) {
-    if (!Array.isArray(values)) {
-      throw "First Argument must be an array";
-    }
-    if (values.length !== rows()) {
-      throw "Incompatible number of elements!";
-    }
-    output = table;
-    output[alias] = values;
-    return JSplyr.createTable(output);
-  }
-
-  return {
-    _JSplyrName: "table",
-    table: table,
-    toMatrix: toMatrix,
-    getFields: getFields,
-    rows: rows,
-
-    select: select,
-    filter: filter,
-    union: union,
-    group_by: group_by,
-    join: join,
-    flatten: flatten,
-    limit: limit,
-    where: where,
-    order_by: order_by,
-    add_column: addColumn,
-
-    rank: rankOrder,
-    is: is
-  };
+  var output = new JSplyr.Table(table)
+  return output;
 };
 
 
@@ -1039,4 +543,514 @@ JSplyr.asc = function(field) {
  */
 JSplyr.desc = function(field) {
   return {_JSplyrName: "order param", type: "desc", field: field};
+}
+
+
+/**
+ * Creates an object with field names as keys and empty arrays as values.
+ *
+ * @param {Array} fields An array of field names.
+ * @return {Object} The object with the field names as keys and empty arrays.
+ */
+JSplyr.createOutput = function(fields) {
+  if(!Array.isArray(fields)) {throw "Argument must be an array!";}
+  var output = {};
+  fields.map(function (field) {
+    if (typeof(field) == "string") {
+      output[field] = [];
+    } else {
+      output[field.alias] = [];
+    }});
+  return output;
+}
+
+
+/**
+ * Whether or not x is in array y
+ *
+ * @param {Object} x The object to be looked for
+ * @param {Array} y The array to be searched
+ * @return {logical} Whether x could be found in y.
+ */
+JSplyr.isIn = function(x, y) {
+  return y.indexOf(x) !== -1;
+}
+
+
+/**
+ * Returns unique entries from an array.
+ *
+ * @param {Array} a The array to be deduped.
+ * @return {Array} An array with unique values.
+ */
+JSplyr.unique = function(a) {
+  if(!Array.isArray(a)) {throw "Argument must be an array!";}
+  var output = [];
+  a.map(function(e) {if (!JSplyr.isIn(e, output)) {output.push(e);}});
+  return output;
+}
+
+
+/**
+ * Repeats a value n times
+ *
+ * @param {Object} x The object to be repeated.
+ * @param {number} n The number of repetitions.
+ * @return {Array} An array of size n filled with copies of x.
+ */
+JSplyr.repeat = function(x, n) {
+  if (!(typeof(n) === "number" && n >= 0 && n % 1 === 0)) {
+    throw "n must be an integer greater or than equal to 0"
+  }
+  var output = [];
+  while (n > 0) {
+    output.push(x);
+    n--;
+  }
+  return output;
+}
+
+
+/**
+ * Recursively checks if two arrays are identical
+ */
+JSplyr.equalArrays = function(a1, a2) {
+  if (!(Array.isArray(a1) && Array.isArray(a2))) {return false;}
+  if (a1.length !== a2.length) {return false;}
+  for (var i in a1) {
+    if (Array.isArray(a1[i])) {
+      if (!equalArrays(a1[i], a2[i])) {return false;jj}
+    } else {
+      if (a1[i] !== a2[i]) {return false;}
+    }
+  }
+  return true;
+}
+
+
+JSplyr.Table.prototype._JSplyrName = "Table";
+
+
+/**
+ * Field names of the Table
+ *
+ * @return {Array} An array of the field names of the table.
+ */
+JSplyr.Table.prototype.getFields = function() {
+  return Object.keys(this.table)
+}
+
+
+/**
+ * The i-th row of a table
+ *
+ * @param {Number} i The row number to be retrieved (0-based).
+ * @return {Array} An array of the values in the i-th row.
+ */
+JSplyr.Table.prototype.getRow = function(i) {
+  if (!(i % 1 !== 0 && i >= 0)) {
+    throw "row must be an integer greatern than or equal to 0";
+  }
+
+  var fields = this.getFields();
+  return fields.map(function(field) {return this.table[field][i];});
+}
+
+
+/**
+ * The number of columns in the table
+ *
+ * @return {number} The number of columns in the table
+ */
+JSplyr.Table.prototype.cols = function() {
+  return this.getFields().length;
+}
+
+
+/**
+ * The number of rows in the table
+ *
+ * @return {number} The number of rows in the table.
+ */
+JSplyr.Table.prototype.rows = function() {
+  return this.table[this.getFields()[0]].length;
+}
+
+
+/**
+ * Limits the output starting at a given offset or the first row.
+ *
+ * @param {Number} limit The number of rows.
+ * @param {Number} offset The number of rows from the first at which to start.
+ * @return {createObject} the truncated table.
+ */
+JSplyr.Table.prototype.limit = function(limit, offset) {
+  offset = offset || 0;
+  var fields = this.getFields();
+  var output = JSplyr.createOutput(fields);
+
+  fields.map(function(field) {
+    output[field] = this.table[field].splice(offset, limit);
+  }, this);
+  return JSplyr.createTable(output);
+}
+
+
+/**
+ * Creates a two dimensional array from the table.
+ *
+ * The table part gets returned as an array of equal length arrays.
+ * Each array is a row and each element in the sub arrays a column within it.
+ * The keys of the table object for into the first row.
+ *
+ * @returns {Array} An array of arrays containing the table.
+ */
+JSplyr.Table.prototype.toMatrix = function() {
+  var output = [[]];
+  var fields = this.getFields();
+  fields.map(function(field) {output[0].push(field);}, this);
+
+  for (var row in this.table[fields[0]]) {
+    output.push(fields.map(function(field) {
+      return this.table[field][row]
+    }, this));
+  }
+  return output;
+}
+
+/**
+ * Adds an array of values to the table as a new field
+ *
+ * @param {Array} values The array of values to be added
+ * @param {String} alias The name the new field should have
+ *
+ */
+JSplyr.Table.prototype.addColumn = function (values, alias) {
+  if (!Array.isArray(values)) {
+    throw "First Argument must be an array";
+  }
+  if (values.length !== this.rows()) {
+    throw "Incompatible number of elements!";
+  }
+  output = this.table;
+  output[alias] = values;
+  return JSplyr.createTable(output);
+}
+
+
+/**
+ * Selects a list of fields from the existing table.
+ *
+ * Takes either field names, As Aliases or Fun Functions.
+ *
+ * @param {...} ... A list of arguments.
+ * @return {createTable} An instance of a table with the selected fields.
+ */
+JSplyr.Table.prototype.select = function() {
+  var fields = JSplyr.objectToArray(arguments);
+
+  //verify fields exist
+  var tableFields = this.getFields();
+  fields.map(function(field) {
+    if (JSplyr.isIn(field, ["object", "string"])) {
+      throw "Wrong argument type";
+    }
+
+    if (typeof(field) === "string") {
+      if (!JSplyr.isIn(field, tableFields) && field !== "*") {
+        throw field + "is not a field of this table";
+      }
+    }
+  });
+
+  var output = {};
+  fields.map(function (field) {
+    if (typeof(field) == "string") {
+    output[field] = this.table[field];
+  } else if (JSplyr.isObject(field, "function")) {
+    output[field.alias] = this.applyScalar(field);
+  } else {
+    output[field.alias] = this.table[field.field];
+  }
+  }, this);
+  return JSplyr.createTable(output);
+}
+
+
+/**
+ * Applies a Fun object to a table
+ *
+ * @param {Fun} fun A Fun object.
+ * @return {Array} Returns an array of the results, one element per row.
+ */
+JSplyr.Table.prototype.applyScalar = function(fun) {
+  if (!JSplyr.isObject(fun, "function")) {
+    throw "Must provide a Fun Object!";
+  }
+  var fields = this.getFields();
+  var r = this.rows();
+  var args = fun.args.map(function(arg) {
+    if (!JSplyr.isIn(arg, fields)) {
+      return JSplyr.repeat(arg, r);
+    } else {
+      return this.table[arg];
+    }
+  }, this);
+
+  var output = [];
+  var currentArgs;
+  for (var row = 0; row < r; row++) {
+    currentArgs = args.map(function(arg) {return arg[row];});
+    output.push(fun.fun.apply(this, currentArgs));
+  }
+  return output;
+}
+
+
+/**
+ * Whether rows fulfil a criterion or not
+ *
+ * The function accepts either a string of a comparison such as == or > or
+ * a function or a column reference;
+ * that column must contain a functio in every row!
+ * Due to the way JS evaluates truthiness any return value is ok.
+ * The comperands can be field names, fun instances or literals.
+ *
+ * @param {Object} lop The left operand.
+ * @param {Object} op The operand.
+ * @param {Object} rop The right operand.
+ * @return {Array} An array of booleans or values that will be used as such.
+ */
+JSplyr.Table.prototype.is = function(comp) {
+  var lop = comp.lop;
+  var op = comp.op;
+  var rop = comp.rop;
+  var fields = this.getFields();
+  var output = [];
+
+  var operations = {
+    "==":  function(l, r) {return l ==  r;},
+    "===": function(l, r) {return l === r;},
+    ">":   function(l, r) {return l >   r;},
+    "<":   function(l, r) {return l <   r;},
+    ">=":  function(l, r) {return l >=  r;},
+    "<=":  function(l, r) {return l <=  r;},
+    "!=":  function(l, r) {return l !=  r;},
+    "!==": function(l, r) {return l !== r;}
+  };
+
+  if (typeof(op) === "function") {
+    operations[op] = op;
+  } else if (JSplyr.isIn(op, fields)) {
+    operations[op] = this.table[op];
+  } else if (operations[op] === undefined) {
+    throw "Operator must be a function, JS comparison or a field reference!";
+  }
+
+  function createComparator(side, thisArg) {
+    thisArg = thisArg || this;
+    if (JSplyr.isIn(side, fields)) {
+      return thisArg.table[side];
+    } if (JSplyr.isObject(side, "function")) {
+      return thisArg.applyScalar(side)
+    }
+    return JSplyr.
+    repeat(side, thisArg.rows());
+  }
+
+  var lopf = createComparator(lop, this);
+  var ropf = createComparator(rop, this);
+
+  for (var row in lopf) {
+    output.push((fields.indexOf(op) !== -1 ?
+        operations[op][row] :
+        operations[op])(lopf[row], ropf[row]));
+  }
+
+  return output;
+}
+
+
+/**
+ * Filters a table's rows.
+ *
+ * @param {Array} criterion An array of boolean values, one for each row.
+ * @return {createTable} The resulting filtered table.
+ */
+JSplyr.Table.prototype.filter = function(criterion) {
+  var fields = this.getFields();
+  var output = JSplyr.createOutput(fields);
+
+  for (var row in criterion) {
+    if (criterion[row]) {
+      fields.map(function(field) {
+        output[field].push(this.table[field][row]);
+      }, this);
+    }
+  }
+  return JSplyr.createTable(output);
+}
+
+
+/**
+ * Filters a table based on a logical combination or comparison provided
+ */
+JSplyr.Table.prototype.where = function(expr) {
+  if (JSplyr.isObject(expr, "comparison")) {
+    return this.filter(this.is(expr));
+  } else if(JSplyr.isObject(expr, "logical combination")) {
+    return this.filter(JSplyr.evaluateLogicalCombination(expr, this))
+  } else {
+    throw "Expression must be a comparison or logical combination!";
+  }
+}
+
+
+/**
+ * Creates the union all of to tables.
+ *
+ * Behavior of behavior:
+ *  - undefined or 0 uses only common columns
+ *  - 1 uses only left columns
+ *  - 2 uses right columns
+ *  - 3 uses all columns
+ *
+ * @param {createTable} t The table to be unioned with.
+ * @param {number} behavior Which columns are to be selected.
+ * @param {Object} empty The value missing columns shall be filled with.
+ * @return {createTable} The union of two tables.
+ */
+JSplyr.Table.prototype.union = function(t, behavior, empty) {
+  behavior = behavior || 0;
+
+  var lfields = this.getFields();
+  var rfields = t.getFields();
+  var fields;
+
+  if (behavior == 0) {
+    fields = lfields.filter(function(lField) {
+      return JSplyr.isIn(lField, rfields);
+    })
+  }
+  if (behavior == 1) {fields = lfields;}
+  if (behavior == 2) {fields = rfields;}
+  if (behavior == 3) {fields = JSplyr.unique(lfields.concat(rfields));}
+
+  var output = JSplyr.createOutput(fields);
+
+  // Check if any of the fields of the left table are in the final table
+  // To see if missing values need to be filled up
+  function fillUpNeeded(unionPartFields) {
+    return unionPartFields.map(function(field) {
+      return JSplyr.isIn(field, fields);}).reduce(function(a,b) {
+        return a || b;});
+  }
+
+  function appendRows(source, field, unionPartfields, needsFillUp) {
+    if (JSplyr.isIn(field, unionPartfields)) {
+      output[field] = output[field].concat(source.table[field]);
+    } else if (needsFillUp) {
+      output[field] = output[field].concat(JSplyr.repeat(empty, source.rows()));
+    }
+  }
+
+  var lfillupNeeded = fillUpNeeded(lfields);
+  var rfillupNeeded = fillUpNeeded(rfields);
+
+  fields.map(function(field) {
+    appendRows(this, field, lfields, lfillupNeeded)
+    appendRows(t, field, rfields, rfillupNeeded)
+  }, this);
+  return JSplyr.createTable(output);
+}
+
+
+/**
+ * Groups a table by a list of field names by nesting non grouping fields.
+ *
+ * The non grouping fields will be nested in arrays.
+ *
+ * @param {String} ... The field names to be grouped by.
+ * @return {createTable} The nested table.
+ */
+JSplyr.Table.prototype.group_by = function() {
+  var groups = JSplyr.objectToArray(arguments);
+  var fields = this.getFields();
+
+  groups.map(function(arg) {
+    if (!JSplyr.isIn(arg, fields)) {throw arg + "not found!";}
+  });
+
+  var currentRow;
+  var nested = JSplyr.createOutput(fields);
+
+  function getRow(table, row, target) {
+    var fields = Object.keys(table);
+    fields = fields.filter(function(f) {return JSplyr.isIn(f, target);});
+    return fields.map(function(field) {
+      return table[field][row];
+    });
+  }
+
+  function findMatchingRow(currentRow) {
+    for (var oRow in nested[fields[0]]) {
+      var checkRow = getRow(nested, oRow, groups);
+      if (JSplyr.equalArrays(currentRow, checkRow)) {
+        return oRow;
+      }
+    }
+    return -1
+  }
+
+  function appendRow(row, target) {
+    fields.map(function(field) {
+      var cell = target.table[field][iRow];
+      if (found !== -1 && !JSplyr.isIn(field, groups)) {
+        nested[field][found].push(cell);
+      } else if (found === -1) {
+        nested[field].push(JSplyr.isIn(field, groups) ? cell : [cell]);
+      }
+    });
+  }
+
+  // Create a nested version of the table
+  for (var iRow in this.table[fields[0]]) {
+    currentRow = getRow(this.table, iRow, groups);
+    var found = findMatchingRow(currentRow);
+    appendRow(found, this);
+  }
+  return JSplyr.createTable(nested);
+}
+
+
+/**
+ * flatten unnests an array.
+ * @param {string} field The nested field to be unnested.
+ * @return {createTable} The flattened table.
+ */
+JSplyr.Table.prototype.flatten = function(field) {
+  var fields = this.getFields();
+
+  if (!JSplyr.isIn(field, fields)) {throw field + " is not a valid field name!";}
+  var column = this.table[field];
+  if(!Array.isArray(column[0])) {throw field + " is not a nested field!";}
+  var output = JSplyr.createOutput(fields);
+
+  function appendRow(row, element, thisArg) {
+    thisArg = thisArg || this;
+    fields.map(function(f) {
+      if (f === field) {
+        output[f].push(column[row][element]);
+      } else {
+        output[f].push(thisArg.table[f][row]);
+      }
+    })
+  }
+
+  for (var row in column) {
+    for (var element in column[row]) {
+      appendRow(row, element, this);
+    }
+  }
+  return JSplyr.createTable(output);
 }
