@@ -38,6 +38,12 @@ JS plyr is a Javascript library that allows you to work with Table like objects.
    4. arrayAnd
    5. arrayOr
    6. arrayNot
+   7. evaluateLogicalCombination
+   8. createOutput
+   9. isIn
+   10. unique
+   11. repeat
+   12. equalArrays
 ___
 ## 1. JSplyr Table constructors
 JSplyr has two table constructors
@@ -488,6 +494,47 @@ The logical not of an array of values.
 
 #### Arguments
 <b>x:</b> The array whose elements should be negated.
+
+### JSplyr.evaluateLogicalCombination
+Applies a logical combination or comparison to a table and returns an array of the rows meeting the criteria
+
+#### Arguments
+<b>comb</b>: A logical combination or a logical comparison
+<b>target</b>: The target table comb is to beevaluated for
+
+### JSplyr.createOutput
+Creates an Object with the fieldnames provided containing empty arrays.
+
+#### Arguments
+<b>fields</b>: An array of field names
+
+### JSplyr.isIn
+Whether an element in a vector
+
+#### Arguments
+<b>x</b>: The value to be found
+<b>y</b>: The array to look up x in
+
+### JSplyr.unique
+Returns Unique values from an array
+
+#### Arguments
+<b>a</b>: The array to be deduped
+
+### JSplyr.repeat
+Repeats a value x n times, returns an array
+
+#### Arguments
+<b>x</b>: The value to be repeated
+<b>n</b>: The number of times the value shall be repeated
+
+### JSplyr.equalArrays
+Tests recursively whether two arrays have the same values in the same order
+
+#### Arguments
+<b>a1</b>: Array 1
+<b>a2</b>: Array 2
+
 
 ## Table auxilliary methods
 
