@@ -366,6 +366,29 @@ JSplyr.equalArrays = function(a1, a2) {
 }
 
 
+JSplyr.stringifier = Object.create(null);
+
+
+JSplyr.stringifier.Number = function(x) {
+  return {
+    content: String(x),
+    height: 1,
+    width: String(x).length
+  }
+}
+
+
+JSplyr.stringifier.String = function(x) {
+  var findNewlines = /[^\n]+/g;
+
+  var height = x.replace(findNewlines, "").length;
+  var rows = x.split("\n");
+  var maxWidth = rows.reduce(function(x, y) {return x.length > y.length ? x : y});
+
+  return {content: x, width: maxWidth.length, height: height}
+}
+
+
 JSplyr.Table.prototype._JSplyrName = "Table";
 
 
