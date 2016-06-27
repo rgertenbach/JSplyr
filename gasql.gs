@@ -369,23 +369,71 @@ JSplyr.equalArrays = function(a1, a2) {
 JSplyr.stringifier = Object.create(null);
 
 
-JSplyr.stringifier.Number = function(x) {
+JSplyr.stringifier.numberCharacterizer = function(x) {
   return {
     content: String(x),
+    type: "number",
     height: 1,
     width: String(x).length
   }
 }
 
 
-JSplyr.stringifier.String = function(x) {
+JSplyr.stringifier.stringCharacterizer = function(x) {
   var findNewlines = /[^\n]+/g;
 
   var height = x.replace(findNewlines, "").length;
   var rows = x.split("\n");
   var maxWidth = rows.reduce(function(x, y) {return x.length > y.length ? x : y});
 
-  return {content: x, width: maxWidth.length, height: height}
+  return {content: x, type: "string", width: maxWidth.length, height: height}
+}
+
+
+JSplyr.stringifier.functionCharacterizer = function(x) {
+  return {content: "function", type: "function", width: 7, height: 1};
+}
+
+
+JSplyr.stringifier.arrayCharacterizer = function(x) {
+  var elements = x.map(JSplyr.stringifier.characterize);
+  return {
+    content: elements,
+    type: "array",
+    width: elements.map(function(x) {return x.width})
+                   .reduce(function(x,y) {return x + y}),
+    height: elements.map(function(x) {return x.height})
+                   .reduce(Math.max)
+  };
+}
+
+// TODO
+JSplyr.stringifier.tableCharacterizer = function(x) {
+  var m = x.toMatrix();
+  var o = m.map(function(row) {return row.map(JSplyr.stringifier.characterize);});
+
+  return {
+    content: o,
+    type: "table",
+    width: 5,
+    height: 1
+  };
+}
+
+
+JSplyr.stringifier.objectCharacterizer = function(x) {
+  var stringifiedX = JSplyr.stringifier.stringCharacterizer(x.toString());
+  return stringifiedX;
+}
+
+
+JSplyr.stringifier.characterize = function(x) {
+  if (typeof(x) === "number") return JSplyr.stringifier.numberCharacterizer(x);
+  if (typeof(x) === "string") return JSplyr.stringifier.stringCharacterizer(x);
+  if (typeof(x) === "function") return JSplyr.stringifier.functionCharacterizer(x);
+  if (Array.isArray(x)) return JSplyr.stringifier.arrayCharacterizer(x);
+  if (JSplyr.isObject(x, "Table")) return JSplyr.stringifier.tableCharacterizer(x);
+  return JSplyr.stringifier.objectCharacterizer(x);
 }
 
 
