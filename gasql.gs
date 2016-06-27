@@ -369,6 +369,9 @@ JSplyr.equalArrays = function(a1, a2) {
 JSplyr.stringifier = Object.create(null);
 
 
+/**
+ * Creates a character Object for a number
+ */
 JSplyr.stringifier.numberCharacterizer = function(x) {
   return {
     content: String(x),
@@ -379,10 +382,13 @@ JSplyr.stringifier.numberCharacterizer = function(x) {
 }
 
 
+/**
+ * Creates a character Object for a string
+ */
 JSplyr.stringifier.stringCharacterizer = function(x) {
   var findNewlines = /[^\n]+/g;
 
-  var height = x.replace(findNewlines, "").length;
+  var height = x.replace(findNewlines, "").length || 1;
   var rows = x.split("\n");
   var maxWidth = rows.reduce(function(x, y) {return x.length > y.length ? x : y});
 
@@ -390,43 +396,74 @@ JSplyr.stringifier.stringCharacterizer = function(x) {
 }
 
 
+/**
+ * Creates a character Object for a function
+ */
 JSplyr.stringifier.functionCharacterizer = function(x) {
   return {content: "function", type: "function", width: 7, height: 1};
 }
 
 
+/**
+ * Creates a character Object for an array
+ */
 JSplyr.stringifier.arrayCharacterizer = function(x) {
   var elements = x.map(JSplyr.stringifier.characterize);
   return {
     content: elements,
     type: "array",
     width: elements.map(function(x) {return x.width})
-                   .reduce(function(x,y) {return x + y}),
+                   .reduce(function(x, y) {return x + y}),
     height: elements.map(function(x) {return x.height})
-                   .reduce(Math.max)
+                    .reduce(function(x, y) {return x > y ? x : y})
   };
 }
 
-// TODO
+
+/**
+ * Creates a character Object for a table
+ */
 JSplyr.stringifier.tableCharacterizer = function(x) {
   var m = x.toMatrix();
   var o = m.map(function(row) {return row.map(JSplyr.stringifier.characterize);});
+  var fields = x.getFields();
+
+  var colWidths = o[0].map(function(x) {return x.width});
+  JSplyr.range(0, x.rows()).map(function(row) {
+    for (var col in colWidths) {
+      if (o[row][col].width > colWidths[col]) {
+        colWidths[col] = o[row][col].width;
+      }
+    }
+  })
+
+  var rowHeights = o.map(function(row) {
+    return row.map(function(x) {return x.height})
+              .reduce(function(x, y) {return x > y ? x : y})
+  });
+
 
   return {
     content: o,
     type: "table",
-    width: 5,
-    height: 1
+    width: colWidths,
+    height: rowHeights
   };
 }
 
 
+/**
+ * Creates a character Object for a generic object
+ */
 JSplyr.stringifier.objectCharacterizer = function(x) {
   var stringifiedX = JSplyr.stringifier.stringCharacterizer(x.toString());
   return stringifiedX;
 }
 
 
+/**
+ * Carachterizes generic objects by dispatching
+ */
 JSplyr.stringifier.characterize = function(x) {
   if (typeof(x) === "number") return JSplyr.stringifier.numberCharacterizer(x);
   if (typeof(x) === "string") return JSplyr.stringifier.stringCharacterizer(x);
