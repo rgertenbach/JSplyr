@@ -386,9 +386,9 @@ JSplyr.stringifier.numberCharacterizer = function(x) {
  * Creates a character Object for a string
  */
 JSplyr.stringifier.stringCharacterizer = function(x) {
-  var findNewlines = /[^\n]+/g;
+  var findNewlines = /[^\n\r]+/g;
   var height = x.replace(findNewlines, "").length + 1 || 1;
-  var rows = x.split("\n");
+  var rows = x.split(/[\n\r]+/);
   var maxWidth = rows.reduce(function(x, y) {return x.length > y.length ? x : y});
   return {content: x, type: "string", width: maxWidth.length, height: height}
 }
@@ -398,7 +398,9 @@ JSplyr.stringifier.stringCharacterizer = function(x) {
  * Creates a character Object for a function
  */
 JSplyr.stringifier.functionCharacterizer = function(x) {
-  return {content: "function", type: "function", width: 7, height: 1};
+  var fString = x.toString();
+  console.log(JSplyr.stringifier.stringCharacterizer(fString))
+  return JSplyr.stringifier.stringCharacterizer("function");
 }
 
 
@@ -411,13 +413,8 @@ JSplyr.stringifier.arrayCharacterizer = function(x) {
     "["+
     elements.map(function(x) {return x.content}).toString() +
     "]";
-  return {
-    content: outputContent,
-    type: "array",
-    width: outputContent.length,
-    height: elements.map(function(x) {return x.height})
-                    .reduce(function(x, y) {return x > y ? x : y})
-  };
+  var output = JSplyr.stringifier.stringCharacterizer(outputContent)
+  return output;
 }
 
 
@@ -430,7 +427,7 @@ JSplyr.stringifier.tableCharacterizer = function(x) {
     return row.map(JSplyr.stringifier.characterize);});
   var fields = x.getFields();
   var colWidths = o[0].map(function(x) {return x.width});
-  JSplyr.range(0, x.rows()).map(function(row) {
+  JSplyr.range(1, x.rows() + 1).map(function(row) {
     for (var col in colWidths) {
       if (o[row][col].width > colWidths[col]) {
         colWidths[col] = o[row][col].width;
@@ -485,12 +482,7 @@ JSplyr.stringifier.tableCharacterizer = function(x) {
     }
   }
 
-  return {
-    content: output,
-    type: "table",
-    width: colWidths,
-    height: rowHeights
-  };
+  return JSplyr.stringifier.stringCharacterizer(output);
 }
 
 
