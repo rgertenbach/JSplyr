@@ -410,7 +410,7 @@ JSplyr.stringifier.functionCharacterizer = function(x) {
 JSplyr.stringifier.arrayCharacterizer = function(x) {
   var elements = x.map(JSplyr.stringifier.characterize);
   return {
-    content: elements,
+    content: elements.map(function(x) {return x.content}).toString(),
     type: "array",
     width: elements.map(function(x) {return x.width})
                    .reduce(function(x, y) {return x + y}),
@@ -444,16 +444,10 @@ JSplyr.stringifier.tableCharacterizer = function(x) {
 
   // function to create matrix for row containing rows that can be parsed into a string
   function rowMatrix(row) {
-    var output = [];
-    for (var i in JSplyr.range(rowHeights[row])) {
-      output.push([]);
-    }
-
     // Create Subrows
     var columns = [];
     for (var col in fields) {
-      o[row][col].content
-      columns.push(o[row][col].content.split("\n")); // Need to convert arrays to strings
+      columns.push(o[row][col].content.split("\n"));
     }
 
     // Standardize subrows to # of subrows the row needs
@@ -472,19 +466,20 @@ JSplyr.stringifier.tableCharacterizer = function(x) {
     return columns
   }
 
-
-
-  // matrix parser
-
-
   var output = "";
   for (var row in o) {
     var currentRow = rowMatrix(row);
-
+    for (var subRow in JSplyr.range(rowHeights[row])) {
+      for (var col in fields) {
+        output += "| " + currentRow[col][subRow] + " |";
+      }
+      output += "\n";
+    }
+    output += "\n\n";
   }
 
   return {
-    content: o,
+    content: output,
     type: "table",
     width: colWidths,
     height: rowHeights
