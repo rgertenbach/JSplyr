@@ -468,10 +468,18 @@ JSplyr.stringifier.tableCharacterizer = function(x) {
   }
 
   var output = "";
+  var rowNumberFiller = JSplyr.repeat(" ", Math.floor(1 + Math.log10(o.length)))
+                              .join("");
+
   for (var row in o) {
     var currentRow = rowMatrix(row);
     for (var subRow in JSplyr.range(rowHeights[row])) {
-      output += (subRow == 0 ? row : " ") + "| "; // Adjust for 10s, and 100s...
+      // Add the row numbers
+      output += (subRow == 0 && row > 0 ?
+                 rowNumberFiller.substring(0, String(row).length - 1) + row :
+                 rowNumberFiller) + "| ";
+
+      // Add rest of row
       output += currentRow.map(function(col) {return col[subRow]}).join(" | ");
       output += " |\n";
     }
