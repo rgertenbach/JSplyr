@@ -409,11 +409,14 @@ JSplyr.stringifier.functionCharacterizer = function(x) {
  */
 JSplyr.stringifier.arrayCharacterizer = function(x) {
   var elements = x.map(JSplyr.stringifier.characterize);
+  var outputContent =
+    "["+
+    elements.map(function(x) {return x.content}).toString() +
+    "]";
   return {
-    content: elements.map(function(x) {return x.content}).toString(),
+    content: outputContent,
     type: "array",
-    width: elements.map(function(x) {return x.width})
-                   .reduce(function(x, y) {return x + y}),
+    width: outputContent.length,
     height: elements.map(function(x) {return x.height})
                     .reduce(function(x, y) {return x > y ? x : y})
   };
