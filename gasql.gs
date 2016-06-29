@@ -386,9 +386,10 @@ JSplyr.stringifier.numberCharacterizer = function(x) {
  * Creates a character Object for a string
  */
 JSplyr.stringifier.stringCharacterizer = function(x) {
-  var findNewlines = /[^\n\r]+/g;
-  var height = x.replace(findNewlines, "").length + 1 || 1;
-  var rows = x.split(/[\n\r]+/);
+  var findNewlines = /[\n\r]/gi;
+  var newLines = x.match(findNewlines);
+  var height = newLines ? newLines.length + 1 : 1;
+  var rows = x.split(findNewlines);
   var maxWidth = rows.reduce(function(x, y) {return x.length > y.length ? x : y});
   return {content: x, type: "string", width: maxWidth.length, height: height}
 }
@@ -399,8 +400,7 @@ JSplyr.stringifier.stringCharacterizer = function(x) {
  */
 JSplyr.stringifier.functionCharacterizer = function(x) {
   var fString = x.toString();
-  console.log(JSplyr.stringifier.stringCharacterizer(fString))
-  return JSplyr.stringifier.stringCharacterizer("function");
+  return JSplyr.stringifier.stringCharacterizer(fString);
 }
 
 
@@ -445,7 +445,7 @@ JSplyr.stringifier.tableCharacterizer = function(x) {
     // Create Subrows
     var columns = [];
     for (var col in fields) {
-      columns.push(o[row][col].content.split("\n"));
+      columns.push(o[row][col].content.split(/[\n\r]/));
     }
 
     // Standardize subrows to # of subrows the row needs
