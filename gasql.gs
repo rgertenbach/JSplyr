@@ -425,9 +425,9 @@ JSplyr.stringifier.arrayCharacterizer = function(x) {
  */
 JSplyr.stringifier.tableCharacterizer = function(x) {
   var m = x.toMatrix();
-  var o = m.map(function(row) {return row.map(JSplyr.stringifier.characterize);});
+  var o = m.map(function(row) {
+    return row.map(JSplyr.stringifier.characterize);});
   var fields = x.getFields();
-
   var colWidths = o[0].map(function(x) {return x.width});
   JSplyr.range(0, x.rows()).map(function(row) {
     for (var col in colWidths) {
@@ -442,6 +442,46 @@ JSplyr.stringifier.tableCharacterizer = function(x) {
               .reduce(function(x, y) {return x > y ? x : y})
   });
 
+  // function to create matrix for row containing rows that can be parsed into a string
+  function rowMatrix(row) {
+    var output = [];
+    for (var i in JSplyr.range(rowHeights[row])) {
+      output.push([]);
+    }
+
+    // Create Subrows
+    var columns = [];
+    for (var col in fields) {
+      o[row][col].content
+      columns.push(o[row][col].content.split("\n")); // Need to convert arrays to strings
+    }
+
+    // Standardize subrows to # of subrows the row needs
+    for (var col in o[row]) {
+      while (columns[col].length < rowHeights[row]) {
+        columns[col].push("");
+      }
+
+      // Pad subrows to column width
+      for (var subRow in columns[col]) {
+        while (columns[col][subRow].length < colWidths[col]) {
+          columns[col][subRow] += " ";
+        }
+      }
+    }
+    return columns
+  }
+
+
+
+  // matrix parser
+
+
+  var output = "";
+  for (var row in o) {
+    var currentRow = rowMatrix(row);
+
+  }
 
   return {
     content: o,
