@@ -387,11 +387,9 @@ JSplyr.stringifier.numberCharacterizer = function(x) {
  */
 JSplyr.stringifier.stringCharacterizer = function(x) {
   var findNewlines = /[^\n]+/g;
-
-  var height = x.replace(findNewlines, "").length || 1;
+  var height = x.replace(findNewlines, "").length + 1 || 1;
   var rows = x.split("\n");
   var maxWidth = rows.reduce(function(x, y) {return x.length > y.length ? x : y});
-
   return {content: x, type: "string", width: maxWidth.length, height: height}
 }
 
@@ -473,12 +471,10 @@ JSplyr.stringifier.tableCharacterizer = function(x) {
   for (var row in o) {
     var currentRow = rowMatrix(row);
     for (var subRow in JSplyr.range(rowHeights[row])) {
-      for (var col in fields) {
-        output += "| " + currentRow[col][subRow] + " |";
-      }
-      output += "\n";
+      output += (subRow == 0 ? row : " ") + "| "; // Adjust for 10s, and 100s...
+      output += currentRow.map(function(col) {return col[subRow]}).join(" | ");
+      output += " |\n";
     }
-    output += "\n\n";
   }
 
   return {
