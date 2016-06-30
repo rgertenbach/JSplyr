@@ -412,7 +412,7 @@ JSplyr.stringifier.stringCharacterizer = function(x) {
  * Creates a character Object for a function
  */
 JSplyr.stringifier.functionCharacterizer = function(x) {
-  var fString = x.toString();
+  var fString = x.toString().replace(/\r/g, "");
   return JSplyr.stringifier.stringCharacterizer(fString);
 }
 
@@ -528,6 +528,14 @@ JSplyr.stringifier.characterize = function(x) {
   if (Array.isArray(x)) return JSplyr.stringifier.arrayCharacterizer(x);
   if (JSplyr.isObject(x, "Table")) return JSplyr.stringifier.tableCharacterizer(x);
   return JSplyr.stringifier.objectCharacterizer(x);
+}
+
+
+/**
+ * toString prototype returning an ASCII representation of the table
+ */
+JSplyr.Table.prototype.toString = function() {
+  return JSplyr.stringifier.tableCharacterizer(this).content;
 }
 
 
