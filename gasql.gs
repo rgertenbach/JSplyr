@@ -350,6 +350,19 @@ JSplyr.repeat = function(x, n) {
 
 
 /**
+ * Repeats a string n times and returns it in a new string instead of an array
+ *
+ * @param {String} str The string to be repeated
+ * @param {Number} n Integer (0 or greater) how many times str is repeated.
+ * @return {String} The repeated string
+ */
+JSplyr.repeatString = function(str, n, joinkey) {
+  joinkey = joinkey || "";
+  return JSplyr.repeat(str, n).join(joinkey);
+}
+
+
+/**
  * Recursively checks if two arrays are identical
  */
 JSplyr.equalArrays = function(a1, a2) {
@@ -440,7 +453,10 @@ JSplyr.stringifier.tableCharacterizer = function(x) {
               .reduce(function(x, y) {return x > y ? x : y})
   });
 
-  // function to create matrix for row containing rows that can be parsed into a string
+  /**
+   * function to create matrix for row containing subrows that can be parsed
+   * into a string
+   */
   function rowMatrix(row) {
     // Create Subrows
     var columns = [];
@@ -465,15 +481,22 @@ JSplyr.stringifier.tableCharacterizer = function(x) {
   }
 
   var output = "";
-  var rowNumberFiller = JSplyr.repeat(" ", Math.floor(1 + Math.log10(o.length)))
-                              .join("");
+  var rowNumberFiller = JSplyr.repeatString(
+    " ", Math.floor(1 + Math.log10(o.length)));
 
   for (var row in o) {
+    if (row == 1) {
+      output += JSplyr.repeatString(" ", rowNumberFiller.length) + "| " +
+                colWidths.map(function(w) {return JSplyr.repeatString("-", w)}
+                        ).join(" | ") + " |\n"
+
+    }
     var currentRow = rowMatrix(row);
     for (var subRow in JSplyr.range(rowHeights[row])) {
       // Add the row numbers
       output += (subRow == 0 && row > 0 ?
-                 rowNumberFiller.substring(0, String(row).length - 1) + row :
+                 rowNumberFiller.substring(
+                   0, rowNumberFiller.length - String(row).length) + row :
                  rowNumberFiller) + "| ";
 
       // Add rest of row
