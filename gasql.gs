@@ -350,6 +350,19 @@ JSplyr.repeat = function(x, n) {
 
 
 /**
+ * Repeats a string n times and returns it in a new string instead of an array
+ *
+ * @param {String} str The string to be repeated
+ * @param {Number} n Integer (0 or greater) how many times str is repeated.
+ * @return {String} The repeated string
+ */
+JSplyr.repeatString = function(str, n, joinkey) {
+  joinkey = joinkey || "";
+  return JSplyr.repeat(str, n).join(joinkey);
+}
+
+
+/**
  * Recursively checks if two arrays are identical
  */
 JSplyr.equalArrays = function(a1, a2) {
@@ -363,6 +376,166 @@ JSplyr.equalArrays = function(a1, a2) {
     }
   }
   return true;
+}
+
+
+JSplyr.stringifier = Object.create(null);
+
+
+/**
+ * Creates a character Object for a number
+ */
+JSplyr.stringifier.numberCharacterizer = function(x) {
+  return {
+    content: String(x),
+    type: "number",
+    height: 1,
+    width: String(x).length
+  }
+}
+
+
+/**
+ * Creates a character Object for a string
+ */
+JSplyr.stringifier.stringCharacterizer = function(x) {
+  var findNewlines = /[\n\r]/gi;
+  var newLines = x.match(findNewlines);
+  var height = newLines ? newLines.length + 1 : 1;
+  var rows = x.split(findNewlines);
+  var maxWidth = rows.reduce(function(x, y) {return x.length > y.length ? x : y});
+  return {content: x, type: "string", width: maxWidth.length, height: height}
+}
+
+
+/**
+ * Creates a character Object for a function
+ */
+JSplyr.stringifier.functionCharacterizer = function(x) {
+  var fString = x.toString().replace(/\r/g, "");
+  return JSplyr.stringifier.stringCharacterizer(fString);
+}
+
+
+/**
+ * Creates a character Object for an array
+ */
+JSplyr.stringifier.arrayCharacterizer = function(x) {
+  var elements = x.map(JSplyr.stringifier.characterize);
+  var outputContent =
+    "["+
+    elements.map(function(x) {return x.content}).toString() +
+    "]";
+  var output = JSplyr.stringifier.stringCharacterizer(outputContent)
+  return output;
+}
+
+
+/**
+ * Creates a character Object for a table
+ */
+JSplyr.stringifier.tableCharacterizer = function(x) {
+  var m = x.toMatrix();
+  var o = m.map(function(row) {
+    return row.map(JSplyr.stringifier.characterize);});
+  var fields = x.getFields();
+  var colWidths = o[0].map(function(x) {return x.width});
+  JSplyr.range(1, x.rows() + 1).map(function(row) {
+    for (var col in colWidths) {
+      if (o[row][col].width > colWidths[col]) {
+        colWidths[col] = o[row][col].width;
+      }
+    }
+  })
+
+  var rowHeights = o.map(function(row) {
+    return row.map(function(x) {return x.height})
+              .reduce(function(x, y) {return x > y ? x : y})
+  });
+
+  /**
+   * function to create matrix for row containing subrows that can be parsed
+   * into a string
+   */
+  function rowMatrix(row) {
+    // Create Subrows
+    var columns = [];
+    for (var col in fields) {
+      columns.push(o[row][col].content.split(/[\n\r]/));
+    }
+
+    // Standardize subrows to # of subrows the row needs
+    for (var col in o[row]) {
+      while (columns[col].length < rowHeights[row]) {
+        columns[col].push("");
+      }
+
+      // Pad subrows to column width
+      for (var subRow in columns[col]) {
+        while (columns[col][subRow].length < colWidths[col]) {
+          columns[col][subRow] += " ";
+        }
+      }
+    }
+    return columns
+  }
+
+  var output = "";
+  var rowNumberFiller = JSplyr.repeatString(
+    " ", Math.floor(1 + Math.log10(o.length)));
+
+  for (var row in o) {
+    if (row == 1) {
+      output += JSplyr.repeatString(" ", rowNumberFiller.length) + "| " +
+                colWidths.map(function(w) {return JSplyr.repeatString("-", w)}
+                        ).join(" | ") + " |\n"
+
+    }
+    var currentRow = rowMatrix(row);
+    for (var subRow in JSplyr.range(rowHeights[row])) {
+      // Add the row numbers
+      output += (subRow == 0 && row > 0 ?
+                 rowNumberFiller.substring(
+                   0, rowNumberFiller.length - String(row).length) + row :
+                 rowNumberFiller) + "| ";
+
+      // Add rest of row
+      output += currentRow.map(function(col) {return col[subRow]}).join(" | ");
+      output += " |\n";
+    }
+  }
+
+  return JSplyr.stringifier.stringCharacterizer(output);
+}
+
+
+/**
+ * Creates a character Object for a generic object
+ */
+JSplyr.stringifier.objectCharacterizer = function(x) {
+  var stringifiedX = JSplyr.stringifier.stringCharacterizer(x.toString());
+  return stringifiedX;
+}
+
+
+/**
+ * Carachterizes generic objects by dispatching
+ */
+JSplyr.stringifier.characterize = function(x) {
+  if (typeof(x) === "number") return JSplyr.stringifier.numberCharacterizer(x);
+  if (typeof(x) === "string") return JSplyr.stringifier.stringCharacterizer(x);
+  if (typeof(x) === "function") return JSplyr.stringifier.functionCharacterizer(x);
+  if (Array.isArray(x)) return JSplyr.stringifier.arrayCharacterizer(x);
+  if (JSplyr.isObject(x, "Table")) return JSplyr.stringifier.tableCharacterizer(x);
+  return JSplyr.stringifier.objectCharacterizer(x);
+}
+
+
+/**
+ * toString prototype returning an ASCII representation of the table
+ */
+JSplyr.Table.prototype.toString = function() {
+  return JSplyr.stringifier.tableCharacterizer(this).content;
 }
 
 
