@@ -1,52 +1,8 @@
 # JSplyr
 JS plyr is a Javascript library that allows you to work with Table like objects.
 
-## Content
-
- 1. JSplyr Table Constructors
-   1. createTable
-   2. createTableFromMatrix
- 2. Table methods and attributes
-   1. select
-   2. limit
-   3. filter
-   4. where
-   5. group_by
-   6. flatten
-   7. union
-   8. join
-   9. order_by
-   10. table
-   11. rows
-   12. getFields
-   13. toMatrix
-   14. is
-   15. rank
- 3. JSplyr expression constructors
-   1. as
-   2. fun
-   3. comp
-   4. and
-   5. or
-   6. not
-   7. asc
-   7. desc
- 4. JSplyr auxilliary functions
-   1. range
-   2. isObject
-   3. objectToArray
-   4. arrayAnd
-   5. arrayOr
-   6. arrayNot
-   7. evaluateLogicalCombination
-   8. createOutput
-   9. isIn
-   10. unique
-   11. repeat
-   12. equalArrays
-___
 ## 1. JSplyr Table constructors
-JSplyr has two table constructors
+JSplyr has two wrappers serving as functional table constructors
 
 ### createTable()
 createTable takes an object as its argument and returns a table object.
@@ -88,7 +44,7 @@ This format of data is for example used when values are retrieved from Google Sp
 
 #### Arguments
 
-**data: ** A two dimensional array, aka an array containing arrays of equal length where each array is a row and each element is a column within that row.
+<b>data</b>: A two dimensional array, aka an array containing arrays of equal length where each array is a row and each element is a column within that row.
 
 #### Example
 
@@ -124,9 +80,9 @@ Each of these methods return a table itself which contains the same methods.
 
 Select returns a table containing the selection of columns of the table that it was used on.
 
- #### Arguments
+#### Arguments
 
- ...: 0 or more arguments that create a field.
+<b>...</b>: 0 or more arguments that create a field.
  A field can be:
  - A column from the source table, called with a string containing the column name.
  - A column that has been given an alias by using JSplyr.as(). (See more under xxx)
@@ -292,11 +248,11 @@ Join supports all typical join types:
 
 #### Arguments
 
-<b>right:</b> The right table to be joined onto this table.  
-<b>method:</b> The join method  
-<b>lkeys:</b> An array containing a number of strings that indicate the field names of the left table to be joined by.  
-<b>rkeys:</b> An rrays of the same length as lkeys containing the field names of the right table to be joined by.  
-<b>empty:</b> The value to fill a row with if the join result is the equivalent of NULL. The default is `undefined.`  
+<b>right:</b> The right table to be joined onto this table.
+<b>method:</b> The join method
+<b>lkeys:</b> An array containing a number of strings that indicate the field names of the left table to be joined by.
+<b>rkeys:</b> An rrays of the same length as lkeys containing the field names of the right table to be joined by.
+<b>empty:</b> The value to fill a row with if the join result is the equivalent of NULL. The default is `undefined.`
 
 #### Example
 ```javascript
@@ -330,8 +286,8 @@ A union has several strategies
 
 #### Arguments
 
-<b>t:</b> The table to be unioned onto the current table.  
-<b>behavior:</b> The union strategy of which columns to use. Default is 0.  
+<b>t:</b> The table to be unioned onto the current table.
+<b>behavior:</b> The union strategy of which columns to use. Default is 0.
 <b>empty:</b> The default value to use if a column does not exist. Default is undefined.
 
 #### Example
@@ -371,8 +327,18 @@ Adds a column to the table
 
 #### Arguments
 
-<b>values:</b> An array of values that will be the new column  
+<b>values:</b> An array of values that will be the new column
 <b>alias:></b> The name the new field should have
+
+### toString()
+Overload of the toString generic.
+This uses a whole lot of custom string coercions to display tables, arrays, objects and funcions.  
+This funtions supports nested objects.
+
+#### Example
+```javascript
+
+````
 
 ## JSplyr expression constructors
 
@@ -381,7 +347,7 @@ as is used to indicate that a field should carry a different alias in a select s
 
 #### Arguments
 
-<b>field:</b> The name of the field in the current table  
+<b>field:</b> The name of the field in the current table
 <b>alias:</b> The name the field should have in the new resulting table
 
 
@@ -390,8 +356,8 @@ fun is used to indicate a scalar function to be applied to a row
 
 #### Arguments
 
-<b>fun:</b> The function to be applied to each row  
-<b>alias:</b> The name the field containing result should have in the resulting table  
+<b>fun:</b> The function to be applied to each row
+<b>alias:</b> The name the field containing result should have in the resulting table
 <b>...:</b> Arguments supplied to the function in order of the declaration. If an argument supplied is a string that exists as a field name in the table then the field in the table is referenced. Otherwise the argument is taken as is.
 
 ### JSplyr.comp
@@ -399,8 +365,8 @@ Creates a comparison between two fields
 
 #### Arguments
 
-<b>lop:</b> The left hand operand. This can be either a string with a field name as it exists in the current table or a fun object.  
-<b>op:</b> Thee operand. This is either a string that is any of: ==, ===, !=, !==, >, <, >=, or <= to execute the expected comparison as a javascript one or it can be a function taking two arguments or it can be field name. If it is a field name every row of the table must contain a function that takes two arguments.  
+<b>lop:</b> The left hand operand. This can be either a string with a field name as it exists in the current table or a fun object.
+<b>op:</b> Thee operand. This is either a string that is any of: ==, ===, !=, !==, >, <, >=, or <= to execute the expected comparison as a javascript one or it can be a function taking two arguments or it can be field name. If it is a field name every row of the table must contain a function that takes two arguments.
 <b>rop:</b> The right hand side operant, the same rules apply as for lop.
 
 ### JSplyr.and
@@ -445,16 +411,23 @@ A python style range function that generates an array of numbers up to but not i
 
 #### Arguments
 
-<b>a:</b> The value to iterate to 0 from is it is the only argument provided, otherwise the value to start from.  
-<b>b:</b> The value to iterate to  
+<b>a:</b> The value to iterate to 0 from is it is the only argument provided, otherwise the value to start from.
+<b>b:</b> The value to iterate to
 <b>c:</b> The size of the steps to be taken, default is 1, can be negative
+
+#### Example
+```javascript
+JSplyr.range(7);          // Returns [0,1,2,3,4,5,6]
+JSplyr.range(3,10);       // Returns [3,4,5,6,7,8,9]
+JSplyr.range(8, 10, 0.5); // Returns [8, 8.5, 9, 9.5]
+```
 
 ### JSplyr.isObject
 Checks if a variable is a JSplyr object and optionally if it is of a certain JSplyr type.
 
 #### Argumnts
 
-<b>object:</b> The object in questions. If this is the only parameter provided the function will check if the object is a JSplyr Object.  
+<b>object:</b> The object in questions. If this is the only parameter provided the function will check if the object is a JSplyr Object.
 <b>name:</b> The name of the JSplyr object. If an object is a JSplr object its name property will be checked if this paraemter is provided.
 
 ### JSplyr.objectToArray
@@ -470,6 +443,13 @@ Entry-wise logical and of one or more arrays
 #### Arguments
 
 <b>...:</b> One or more Arrays whose joint truthiness will be evaluated
+
+#### Example
+
+```javascript
+JSplyr.arrayAnd([true, true, true], [true, false, false], [true, false, true]);
+// Returs: [true, false, false]
+```
 
 ### JSplyr.arrayOr
 Entry-wise logical or of one or more arrays
@@ -488,7 +468,7 @@ The logical not of an array of values.
 Applies a logical combination or comparison to a table and returns an array of the rows meeting the criteria
 
 #### Arguments
-<b>comb</b>: A logical combination or a logical comparison  
+<b>comb</b>: A logical combination or a logical comparison
 <b>target</b>: The target table comb is to beevaluated for
 
 ### JSplyr.createOutput
@@ -501,7 +481,7 @@ Creates an Object with the fieldnames provided containing empty arrays.
 Whether an element in a vector
 
 #### Arguments
-<b>x</b>: The value to be found  
+<b>x</b>: The value to be found
 <b>y</b>: The array to look up x in
 
 ### JSplyr.unique
@@ -517,6 +497,24 @@ Repeats a value x n times, returns an array
 <b>x</b>: The value to be repeated
 <b>n</b>: The number of times the value shall be repeated
 
+#### Example
+```javascript
+JSplyr.repeat("Hello", 3); // Returns ["Hello", "Hello", "Hello"]
+```
+
+### JSplyr.repeatString
+Repeats a value n times and returns a stirng
+
+#### Arguments
+<b>str</b>: The string (or value that will be coerced) tha is to be repeated
+<b>n</b>: The number of repetitions
+<b>joinkey</b>: (Optional) The separator between the repetitions defaults to `""`
+
+#### Example
+```javascript
+"Ba" + JSplyr.repeatString("na", 2); // Returns "Banana"
+```
+
 ### JSplyr.equalArrays
 Tests recursively whether two arrays have the same values in the same order
 
@@ -531,7 +529,7 @@ Tests recursively whether two arrays have the same values in the same order
 Returns an array of the ascending rank  of the field values within the table.
 
 #### Arguments
-<b>field:</b> The field whose values are to rank  
+<b>field:</b> The field whose values are to rank
 <b>dense</b> Whether ties should be returned by themselves or whether each rank shouls be its own arrays with ties having multiple elements.
 
 
