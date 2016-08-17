@@ -322,8 +322,10 @@ customers.order(JSplyr.asc("Country"), JSplyr.desc("Revenue"));
 |           9 | GB      |    5.00 |
 |           8 | xx      |    0.10 |
 
-### add_column
+### addColumn
 Adds a column to the table
+Takes an array and a field name and adds the array as rows for the new field name column.
+The array must have the same length as the table has rows.
 
 #### Arguments
 
@@ -332,12 +334,54 @@ Adds a column to the table
 
 ### toString()
 Overload of the toString generic.
-This uses a whole lot of custom string coercions to display tables, arrays, objects and funcions.  
-This funtions supports nested objects.
+This funtions supports nested objects and has representations for many types:
+ - Numbers
+ - Strings, including linebreaks
+ - Arrays, including nested arrays
+ - functions, showing their body including linebreaks
+ - And of course tables can be nested within tables
 
-#### Example
+#### Example 1
 ```javascript
+customers.toString();
 
+//   | Customer ID | Country | Revenue |
+//   | ----------- | ------- | ------- |
+//  1| 1           | GB      | 19.99   |
+//  2| 2           | GB      | 28.5    |
+//  3| 3           | DE      | 113.5   |
+//  4| 4           | GB      | 23      |
+//  5| 5           | FR      | 54      |
+//  6| 6           | GB      | 89.99   |
+//  7| 7           | FR      | 23.1    |
+//  8| 8           | XX      | 90      |
+//  9| 9           | GB      | 0.1     |
+// 10| 10          | DE      | 5       |
+```
+
+
+#### Example 2
+```javascript
+JSplyr.createTable({
+  a: [1, "string", function(x) {return x*2}],
+  b: [["Arrays", "work", "too", ["even", "nested"]],
+      JSplyr.createTable({nested: ["work"],
+                          "tables": ["too"]}),
+      "Oh\n\n\did someone say\nline\nbreak?"]
+}).toString();
+
+//  | a                         | b                               |
+//  | ------------------------- | ------------------------------- |
+// 1| 1                         | [Arrays,work,too,[even,nested]] |
+// 2| string                    |  | nested | tables |            |
+//  |                           |  | ------ | ------ |            |
+//  |                           | 1| work   | too    |            |
+//  |                           |                                 |
+// 3| function (x) {return x*2} | Oh                              |
+//  |                           |                                 |
+//  |                           | did someone say                 |
+//  |                           | line                            |
+//  |                           | break?                          |
 ````
 
 ## JSplyr expression constructors
@@ -544,11 +588,46 @@ Creates a two dimensional array (An array of arrays) from the table.
 Every element of the array will be an array representing a row.
 The inner arrays have an element per column within that row.
 
+```javascript
+customers.toMatrix();
+
+// [["Customer ID", "Coutry", "Revenue"]]
+```
+
 ### getFields
-The field names of the table in an array
+Gets the field names of the table in an array
+
+#### Example
+```javascript
+customers.getFields();
+
+// [ [ 'Customer ID', 'Country', 'Revenue' ],
+//   [ 1, 'GB', 19.99 ],
+//   [ 2, 'GB', 28.5 ],
+//   [ 3, 'DE', 113.5 ],
+//   [ 4, 'GB', 23 ],
+//   [ 5, 'FR', 54 ],
+//   [ 6, 'GB', 89.99 ],
+//   [ 7, 'FR', 23.1 ],
+//   [ 8, 'XX', 90 ],
+//   [ 9, 'GB', 0.1 ],
+//   [ 10, 'DE', 5 ] ]
+```
 
 ### rows
-The number of rows of the table
+Returns the number of rows of the table
+
+### cols
+Returns the numbers of columns in the table
+
+### getRow
+Returns the values of the i-th row (0 based_ in an array)
+
+```javascript
+customers.getRow(2);
+
+// [3, "DE", 113.5]
+```
 
 ### table (Object)
 The actual table object. contains the field names as keys and the values as arrays.
