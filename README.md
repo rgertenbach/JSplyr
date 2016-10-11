@@ -391,7 +391,7 @@ as is used to indicate that a field should carry a different alias in a select s
 
 #### Arguments
 
-<b>field:</b> The name of the field in the current table
+<b>field:</b> The name of the field in the current table  
 <b>alias:</b> The name the field should have in the new resulting table
 
 
