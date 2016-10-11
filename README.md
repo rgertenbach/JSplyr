@@ -286,9 +286,9 @@ A union has several strategies
 
 #### Arguments
 
-<b>t:</b> The table to be unioned onto the current table.
-<b>behavior:</b> The union strategy of which columns to use. Default is 0.
-<b>empty:</b> The default value to use if a column does not exist. Default is undefined.
+<b>t:</b> The table to be unioned onto the current table.  
+<b>behavior:</b> The union strategy of which columns to use. Default is 0.  
+<b>empty:</b> The default value to use if a column does not exist. Default is undefined.  
 
 #### Example
 ```javascript
