@@ -400,8 +400,8 @@ fun is used to indicate a scalar function to be applied to a row
 
 #### Arguments
 
-<b>fun:</b> The function to be applied to each row
-<b>alias:</b> The name the field containing result should have in the resulting table
+<b>fun:</b> The function to be applied to each row  
+<b>alias:</b> The name the field containing result should have in the resulting table  
 <b>...:</b> Arguments supplied to the function in order of the declaration. If an argument supplied is a string that exists as a field name in the table then the field in the table is referenced. Otherwise the argument is taken as is.
 
 ### JSplyr.comp
@@ -409,8 +409,8 @@ Creates a comparison between two fields
 
 #### Arguments
 
-<b>lop:</b> The left hand operand. This can be either a string with a field name as it exists in the current table or a fun object.
-<b>op:</b> Thee operand. This is either a string that is any of: ==, ===, !=, !==, >, <, >=, or <= to execute the expected comparison as a javascript one or it can be a function taking two arguments or it can be field name. If it is a field name every row of the table must contain a function that takes two arguments.
+<b>lop:</b> The left hand operand. This can be either a string with a field name as it exists in the current table or a fun object.  
+<b>op:</b> Thee operand. This is either a string that is any of: ==, ===, !=, !==, >, <, >=, or <= to execute the expected comparison as a javascript one or it can be a function taking two arguments or it can be field name. If it is a field name every row of the table must contain a function that takes two arguments.  
 <b>rop:</b> The right hand side operant, the same rules apply as for lop.
 
 ### JSplyr.and
