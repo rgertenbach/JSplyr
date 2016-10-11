@@ -455,8 +455,8 @@ A python style range function that generates an array of numbers up to but not i
 
 #### Arguments
 
-<b>a:</b> The value to iterate to 0 from is it is the only argument provided, otherwise the value to start from.
-<b>b:</b> The value to iterate to
+<b>a:</b> The value to iterate to 0 from is it is the only argument provided, otherwise the value to start from.  
+<b>b:</b> The value to iterate to  
 <b>c:</b> The size of the steps to be taken, default is 1, can be negative
 
 #### Example
@@ -471,7 +471,7 @@ Checks if a variable is a JSplyr object and optionally if it is of a certain JSp
 
 #### Argumnts
 
-<b>object:</b> The object in questions. If this is the only parameter provided the function will check if the object is a JSplyr Object.
+<b>object:</b> The object in questions. If this is the only parameter provided the function will check if the object is a JSplyr Object.  
 <b>name:</b> The name of the JSplyr object. If an object is a JSplr object its name property will be checked if this paraemter is provided.
 
 ### JSplyr.objectToArray
@@ -512,7 +512,7 @@ The logical not of an array of values.
 Applies a logical combination or comparison to a table and returns an array of the rows meeting the criteria
 
 #### Arguments
-<b>comb</b>: A logical combination or a logical comparison
+<b>comb</b>: A logical combination or a logical comparison  
 <b>target</b>: The target table comb is to beevaluated for
 
 ### JSplyr.createOutput
@@ -525,7 +525,7 @@ Creates an Object with the fieldnames provided containing empty arrays.
 Whether an element in a vector
 
 #### Arguments
-<b>x</b>: The value to be found
+<b>x</b>: The value to be found  
 <b>y</b>: The array to look up x in
 
 ### JSplyr.unique
@@ -538,7 +538,7 @@ Returns Unique values from an array
 Repeats a value x n times, returns an array
 
 #### Arguments
-<b>x</b>: The value to be repeated
+<b>x</b>: The value to be repeated  
 <b>n</b>: The number of times the value shall be repeated
 
 #### Example
@@ -550,8 +550,8 @@ JSplyr.repeat("Hello", 3); // Returns ["Hello", "Hello", "Hello"]
 Repeats a value n times and returns a stirng
 
 #### Arguments
-<b>str</b>: The string (or value that will be coerced) tha is to be repeated
-<b>n</b>: The number of repetitions
+<b>str</b>: The string (or value that will be coerced) tha is to be repeated  
+<b>n</b>: The number of repetitions  
 <b>joinkey</b>: (Optional) The separator between the repetitions defaults to `""`
 
 #### Example
@@ -563,7 +563,7 @@ Repeats a value n times and returns a stirng
 Tests recursively whether two arrays have the same values in the same order
 
 #### Arguments
-<b>a1</b>: Array 1
+<b>a1</b>: Array 1  
 <b>a2</b>: Array 2
 
 
