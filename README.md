@@ -248,11 +248,11 @@ Join supports all typical join types:
 
 #### Arguments
 
-<b>right:</b> The right table to be joined onto this table.
-<b>method:</b> The join method
-<b>lkeys:</b> An array containing a number of strings that indicate the field names of the left table to be joined by.
-<b>rkeys:</b> An rrays of the same length as lkeys containing the field names of the right table to be joined by.
-<b>empty:</b> The value to fill a row with if the join result is the equivalent of NULL. The default is `undefined.`
+<b>right:</b> The right table to be joined onto this table.  
+<b>method:</b> The join method.  
+<b>lkeys:</b> An array containing a number of strings that indicate the field names of the left table to be joined by.  
+<b>rkeys:</b> An rrays of the same length as lkeys containing the field names of the right table to be joined by.  
+<b>empty:</b> The value to fill a row with if the join result is the equivalent of NULL. The default is `undefined.`  
 
 #### Example
 ```javascript
