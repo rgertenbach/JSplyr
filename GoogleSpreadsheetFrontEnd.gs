@@ -1,14 +1,13 @@
 /**
- * Selects a list of Columns
+ * Selects a list of Columns from a Table
  *
- * @param {A1:F10} data The table (with headers).
- * @param {"{"Customer ID", "Country"}"} fields The fields to be selected. Can be a single name or a range of names or a range reference to the sheet.
- * @return {} Gets only the required columns from the table
+ * @param {A1:F10} table The table (with headers).
+ * @param {\{"Customer ID", "Country"\}} fields The fields to be selected. This can be a single name or a range of names or a range reference to the sheet.
  * @customfunction
  */
-function TABLE_SELECT(data, fields) {    
-  var t = JSplyr.createTableFromMatrix(data);
-  fields = Array.isArray(fields) ? matrixToList(fields) : [fields];
+function TABLE_SELECT(table, fields) {    
+  var t = JSplyr.createTableFromMatrix(table);
+  fields = arrayify(fields);
   return JSplyr.Table.prototype.select.apply(t, fields).toMatrix();
 }
 
@@ -17,12 +16,12 @@ function TABLE_SELECT(data, fields) {
  * Renames the fields of a table
  *
  * @param {A1:F10} table The table
- * @param {A12:F12} aliase An alias or a list of aliases
+ * @param {A12:F12} aliases An alias or a list of aliases, can be a single name for a one column table, a literal range or a range reference.
  * @customfunction
  */
 function TABLE_RENAME(table, aliases) {
   var t = JSplyr.createTableFromMatrix(table);
-  aliases = Array.isArray(aliases) ? matrixToList(aliases) : aliases;
+  aliases = arrayify(aliases);
   var fields = t.getFields();
   var asArray = aliases.map(function(alias, i) {return JSplyr.as(fields[i], alias);});
   return JSplyr.Table.prototype.select.apply(t, asArray).toMatrix();
@@ -36,11 +35,26 @@ function TABLE_RENAME(table, aliases) {
  * @param {E2:E10} criterion A list of values
  * @customfunction
  */
-function TABLE_FILTER(data, criterion) {
-  var t = JSplyr.createTableFromMatrix(data);
+function TABLE_FILTER(table, criterion) {
+  var t = JSplyr.createTableFromMatrix(table);
   return t.filter(matrixToList(criterion, false)).toMatrix();
 }
 
+
+/**
+ * Limits a table to a certain number of rows, optionally starting at a certain row
+ *
+ * @param {A1:F10} table The table
+ * @param {5} limit The amount of rows to show (default: 10}
+ * @param {2} The rows number of rows to skip
+ * @customfunction
+ */
+function TABLE_LIMIT(table, limit, offset) {
+  var t = JSplyr.createTableFromMatrix(table);
+  limit = limit || 10;
+  offset = offset || 0;
+  return t.limit(limit, offset).toMatrix();
+}
 
 /** TODO
  * Allows arrayformula of custom functions
@@ -69,12 +83,23 @@ function TABLE_UNION(table1, table2, behavior, empty) {
 }
 
 
-
-function TABLE_AGG(table, fields, fun) {
+/**
+ * Allows to aggregate the table by a function.
+ *
+ * @param {A1:F10} table The table
+ * @param {B1} group_fields The fields to group by
+ * @param {"count_unique"} fun The function used to aggregate. This can be a predefined function or the name of a function one you define yourself in Apps Script.
+ * @param {"unique values"} alias The name to be given to the aggregated values.
+ * @param {params} Parameters to the function, Can be a single value or a range, any strings that are fields in the table will pass the field, anything else will be passed as is.
+ * @customfunction
+ */
+function TABLE_AGG(table, group_fields, fun, alias, params) {
   var t = JSplyr.createTableFromMatrix(table);
-  fields = Array.isArray(fields) ? matrixToList(fields) : [fields];
-  var g = JSplyr.Table.prototype.group_by.apply(t, fields);
-  return JSplyr.Table.prototype.select.apply(g, ["Country", JSplyr.fun(this[fun], "fffff", "Customer ID")]).toMatrix();
+  group_fields = arrayify(group_fields).filter(function(x) {return x.length});
+  params = arrayify(params);
+  var g = JSplyr.Table.prototype.group_by.apply(t, group_fields);
+  var funObj = JSplyr.fun.apply(null, [this[fun], alias].concat(params)); 
+  return JSplyr.Table.prototype.select.apply(g, group_fields.concat(funObj)).toMatrix();
 }
 
 
@@ -115,13 +140,57 @@ function matrixToList(matrix, shorten) {
 }
 
 
+/**
+ * Makes a 2d array a plain array or a single value into a 1-element array.
+ *
+ * @param {Object} x and Object or Object[][]
+ * @return {Object[]} A 1d array of objects
+ */
+function arrayify(x) {
+  return Array.isArray(x) ? matrixToList(x) : [x];
+}
 
-function count_unique(a) {
+
+
+// Summary functions
+
+function count(x) {
+  return x.length;
+}
+
+function count_unique(x) {
   var unique = [];
-  a.forEach(function(element) { 
+  x.forEach(function(element) { 
     if (unique.indexOf(element) === -1) {
       unique.push(element);
     }
   });
   return unique.length;
+}
+
+function sum(x) {
+  return x.reduce(function(a,b) {return a+b;});
+}
+
+function mean(x) {
+  return sum(x) / count(x);
+}
+
+function covar(x, y) {
+  mu_x = mean(x);
+  mu_y = mean(y);
+
+  return x.map(function(x_i, i) {
+    return (x_i - mu_x) * (y[i] - mu_y);
+  }).reduce(function(a, b) {
+    return a+b;
+  }) / (count(x) - 1);
+}
+
+function variance (x) {
+  return covar(x,x);
+}
+
+function sd(x) {
+  return Math.sqrt(variance(x));
 }
