@@ -56,11 +56,21 @@ function TABLE_LIMIT(table, limit, offset) {
   return t.limit(limit, offset).toMatrix();
 }
 
+
 /** TODO
- * Allows arrayformula of custom functions
+ * Adds a field that is a function applied to every row of the table. Allows arrayformula of custom functions.
+ * 
+ * @param {A1:F10} table The table
+ * @param {"upper"} fun The name of the function. This can be a predefiend one or the name of a function you defined in the script editor.
+ * @param {"NAME"} alias The name the new column should carry, if you chose an existing name XXXXXXXXXXX
+ * @param {"name"} params A single parameter or a range of parameter values passed on to the function. If they are the names of fields in the table those will be referenced.
+ * @customfunction
  */
-function TABLE_MUTATE(data, fun, params) {
-  var t = JSplyr.createTableFromMatrix(data);
+function TABLE_MUTATE(table, fun, alias, params) {
+  var t = JSplyr.createTableFromMatrix(table);
+  var fields = t.getFields();
+  var f = JSplyr.fun.apply(null, [this[fun], alias].concat(params)); 
+  return JSplyr.Table.prototype.select.apply(t, fields.concat(f)).toMatrix();
 }
 
 
@@ -75,8 +85,7 @@ function TABLE_MUTATE(data, fun, params) {
  */
 function TABLE_UNION(table1, table2, behavior, empty) {
   behavior = behavior === undefined ? 0 : behavior;
-  empty = empty === undefined ? "" : empty;
-  
+  empty = empty === undefined ? "" : empty; 
   var t1 = JSplyr.createTableFromMatrix(table1);
   var t2 = JSplyr.createTableFromMatrix(table2);
   return t1.union(t2, behavior, empty).toMatrix();
@@ -87,8 +96,8 @@ function TABLE_UNION(table1, table2, behavior, empty) {
  * Allows to aggregate the table by a function.
  *
  * @param {A1:F10} table The table
- * @param {B1} group_fields The fields to group by
- * @param {"count_unique"} fun The function used to aggregate. This can be a predefined function or the name of a function one you define yourself in Apps Script.
+ * @param {B1} group_fields The fields to group by, leave blank to summarize all data into one row
+ * @param {"count_unique"} fun The function used to aggregate. This can be a predefined function or the name of a function one you define yourself in Apps Script. Supoprted functions are: count, count_unique, sum, mean, covar, variance and sd.
  * @param {"unique values"} alias The name to be given to the aggregated values.
  * @param {params} Parameters to the function, Can be a single value or a range, any strings that are fields in the table will pass the field, anything else will be passed as is.
  * @customfunction
@@ -193,4 +202,9 @@ function variance (x) {
 
 function sd(x) {
   return Math.sqrt(variance(x));
+}
+
+// Scalar functions
+function upper(x) {
+  return x.toUpperCase();
 }
