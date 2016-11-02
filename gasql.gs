@@ -975,7 +975,7 @@ JSplyr.Table.prototype.flatten = function(field) {
  *  - "inner": Only rows that have matches are used.
  *  - "left": Inner join + unmatches left rows.
  *  - "right" Inner join + unmatched right rows.
- *  - "outer": Inner join and unmatched left and right rows.
+ *  - "full": Inner join and unmatched left and right rows.
  *  - "cross": cross product of every row of the two tables.
  *             If a cross join is used no keys are necessary.
  *
@@ -989,7 +989,7 @@ JSplyr.Table.prototype.flatten = function(field) {
  * @return {Table} a Table that is the join result of the two tables.
  */
 JSplyr.Table.prototype.join = function(right, method, lKeys, rKeys, empty) {
-  var allowed_methods = ["inner", "left", "right", "outer", "cross"]
+  var allowed_methods = ["inner", "left", "right", "full", "cross"]
   method = method || "inner";
 
   if (!JSplyr.isObject(right, "Table")) {throw "First argument must be table!";}
@@ -1085,10 +1085,10 @@ JSplyr.Table.prototype.join = function(right, method, lKeys, rKeys, empty) {
     return output;
   }
 
-  if (methodIn(["inner", "left", "outer"])) {
+  if (methodIn(["inner", "left", "full"])) {
     var lMatches = matchTables(this, right, lKeys, rKeys);
   }
-  if (methodIn(["right", "outer"])) {
+  if (methodIn(["right", "full"])) {
     var rMatches = matchTables(right, this, rKeys, lKeys);
   }
   if (methodIn(["cross"])) {
@@ -1109,12 +1109,12 @@ JSplyr.Table.prototype.join = function(right, method, lKeys, rKeys, empty) {
     results = JSplyr.createTable(constructJoin(right, this, rMatches, false, true));
   }
 
-  if (methodIn(["left", "outer", "cross"])) {
+  if (methodIn(["left", "full", "cross"])) {
     var b = JSplyr.createTable(constructJoin(this, right, lMatches, true));
     results = results.union(b);
   }
 
-  if (methodIn(["right", "outer"])) {
+  if (methodIn(["right", "full"])) {
     var b = JSplyr.createTable(constructJoin(right, this, rMatches, true, true));
     results = results.union(b);
   }
