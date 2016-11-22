@@ -588,7 +588,7 @@ JSplyr.Table.prototype.getColumn = function(col) {
   if (!JSplyr.isIn(col, this.getFields())) {
     throw "Column does not exist"
   }
-  return this.table[row];
+  return this.table[col];
 }
 
 
