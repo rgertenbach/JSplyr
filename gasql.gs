@@ -579,6 +579,20 @@ JSplyr.Table.prototype.getRow = function(i) {
 
 
 /**
+ * Retrieves a column from a table
+ *
+ * @param {String} col The column to be retrieved.
+ * @return {Object[]} The rows of the column
+ */
+JSplyr.Table.prototype.getColumn = function(col) {
+  if (!JSplyr.isIn(col, this.getFields())) {
+    throw "Column does not exist"
+  }
+  return this.table[col];
+}
+
+
+/**
  * The number of rows in the table
  *
  * @return {number} The number of rows in the table.
