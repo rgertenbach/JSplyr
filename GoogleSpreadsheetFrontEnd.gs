@@ -29,15 +29,26 @@ function TABLE_RENAME(table, aliases) {
 
 
 /**
- * Filters based on a set of truthy or falsy values
+ * Filters based on a set of truthy or falsy values. You can pass a column name and it will use that.
  *
  * @param {A1:F10} data The table with headers
  * @param {E2:E10} criterion A list of values
+ * @param {FALSE} omit_column Whether to omit the column used to filter (default TRUE)
  * @customfunction
  */
-function TABLE_FILTER(table, criterion) {
+function TABLE_FILTER(table, criterion, omit_column) {
+  if(omit_column === undefined) {omit_column = true;}
   var t = JSplyr.createTableFromMatrix(table);
-  return t.filter(matrixToList(criterion, false)).toMatrix();
+  var fields = t.getFields();
+  
+  if (JSplyr.isIn(criterion, t.getFields())) {
+    fields = fields.filter(function(field) {
+      return field !== this.criterion || !this.omit_column;
+    }, {criterion: criterion, omit_column: omit_column});
+    
+    criterion = [t.getColumn(criterion)];
+  }
+  return JSplyr.Table.prototype.select.apply(t.filter(matrixToList(criterion, false)), fields).toMatrix();
 }
 
 
@@ -57,12 +68,12 @@ function TABLE_LIMIT(table, limit, offset) {
 }
 
 
-/** TODO
+/**
  * Adds a field that is a function applied to every row of the table. Allows arrayformula of custom functions.
  * 
  * @param {A1:F10} table The table
  * @param {"upper"} fun The name of the function. This can be a predefiend one or the name of a function you defined in the script editor.
- * @param {"NAME"} alias The name the new column should carry, if you chose an existing name XXXXXXXXXXX
+ * @param {"NAME"} alias The name the new column should carry, if you chose an existing name it will overwrite
  * @param {"name"} params A single parameter or a range of parameter values passed on to the function. If they are the names of fields in the table those will be referenced.
  * @customfunction
  */
@@ -117,7 +128,7 @@ function TABLE_AGG(table, group_fields, fun, alias, params) {
  *
  * @param {A1:F10} table1 The left table
  * @param {A12:F20} table2 The right table
- * @param {"left"} (Optional) method The join method can be one of {"inner", "left", "right, "full", "cross"}. Default is inner
+ * @param {"left"} method The join method can be one of {"inner", "left", "right, "full", "cross"}. Default is inner (Optional)
  * @param {A1:C1} lkeys The keys to be used for the left side. Not required for cross joins.
  * @param {A12:C12} rkeys The keys to be used for the right side. Not required for cross joins.
  * @param {"NA"} empty The string to represent missing matches (default: ""). Only required for Outer Joins.
@@ -127,8 +138,8 @@ function TABLE_JOIN(table1, table2, method, lkeys, rkeys, empty) {
   empty = empty === undefined ? "" : empty;
   method = method.toLowerCase();  
   
-  if(Array.isArray(lkeys) && Array.isArray(lkeys[0])) {lkeys = lkeys[0];} 
-  if(Array.isArray(rkeys) && Array.isArray(rkeys[0])) {rkeys = rkeys[0];} 
+  lkeys = arrayify(lkeys);
+  rkeys = arrayify(rkeys);
   
   var t1 = JSplyr.createTableFromMatrix(table1);
   var t2 = JSplyr.createTableFromMatrix(table2);
@@ -150,10 +161,9 @@ function TABLE_ORDER(table, fields, order) {
     "desc": JSplyr.desc
   };
   
-  fields = (Array.isArray(fields) && Array.isArray(fields[0])) ? fields[0] : [fields];
-  order = (Array.isArray(order) && Array.isArray(order[0])) ? order[0] : [order];
-  
-  
+  fields = arrayify(fields) ;
+  order = arrayify(order);
+
   order = order.map(function(x) {return x.toLowerCase();});
   var t = JSplyr.createTableFromMatrix(table);
   var orderInstructions = fields.map(function(field, i) {
