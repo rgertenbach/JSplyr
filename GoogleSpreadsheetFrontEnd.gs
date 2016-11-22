@@ -117,7 +117,7 @@ function TABLE_AGG(table, group_fields, fun, alias, params) {
  *
  * @param {A1:F10} table1 The left table
  * @param {A12:F20} table2 The right table
- * @param {"left"} method The join method can be one of {"inner", "left", "right", "full", "cross"} 
+ * @param {"left"} (Optional) method The join method can be one of {"inner", "left", "right, "full", "cross"}. Default is inner
  * @param {A1:C1} lkeys The keys to be used for the left side. Not required for cross joins.
  * @param {A12:C12} rkeys The keys to be used for the right side. Not required for cross joins.
  * @param {"NA"} empty The string to represent missing matches (default: ""). Only required for Outer Joins.
@@ -125,6 +125,11 @@ function TABLE_AGG(table, group_fields, fun, alias, params) {
  */
 function TABLE_JOIN(table1, table2, method, lkeys, rkeys, empty) {
   empty = empty === undefined ? "" : empty;
+  method = method.toLowerCase();  
+  
+  if(Array.isArray(lkeys) && Array.isArray(lkeys[0])) {lkeys = lkeys[0];} 
+  if(Array.isArray(rkeys) && Array.isArray(rkeys[0])) {rkeys = rkeys[0];} 
+  
   var t1 = JSplyr.createTableFromMatrix(table1);
   var t2 = JSplyr.createTableFromMatrix(table2);
   return t1.join(t2, method, lkeys, rkeys, empty).toMatrix();
@@ -207,4 +212,29 @@ function sd(x) {
 // Scalar functions
 function upper(x) {
   return x.toUpperCase();
+}
+
+
+// Addon formalia
+function onOpen(e) {
+  SpreadsheetApp.getUi().createAddonMenu()
+      .addItem('Activate', 'launch')
+      .addToUi();
+}
+
+
+function onInstall(e) {
+  onOpen(e);
+  SpreadsheetApp.getActiveSpreadsheet().toast(
+    "GASplyr.\n\n" +
+    "You can launch this Add-on by clicking on: " +
+    "Add-ons -> GASplyr -> Activate");
+}
+
+
+function launch() {
+  SpreadsheetApp.getActiveSpreadsheet().toast(
+    "You can now start using GASplyr's TABLE_ functions.\n" +
+    "For Help go to Add-ons -> GASplyr -> Help -> Learn more.",
+    "GASplyr enabled");
 }
