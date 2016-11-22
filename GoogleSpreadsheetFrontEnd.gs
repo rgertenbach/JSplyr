@@ -136,6 +136,34 @@ function TABLE_JOIN(table1, table2, method, lkeys, rkeys, empty) {
 }
 
 
+/**
+ * Sorts a table
+ *
+ * @param {A1:F10} table The table
+ * @param {A1:C1} fields The fields to order by
+ * @param {"asc", "desc", "asc"} order The order 
+ * @customfunction
+ */
+function TABLE_ORDER(table, fields, order) {
+  var constructors = {
+    "asc": JSplyr.asc,
+    "desc": JSplyr.desc
+  };
+  
+  fields = (Array.isArray(fields) && Array.isArray(fields[0])) ? fields[0] : [fields];
+  order = (Array.isArray(order) && Array.isArray(order[0])) ? order[0] : [order];
+  
+  
+  order = order.map(function(x) {return x.toLowerCase();});
+  var t = JSplyr.createTableFromMatrix(table);
+  var orderInstructions = fields.map(function(field, i) {
+    return constructors[order[i]](field)
+  });
+  
+  return JSplyr.Table.prototype.order_by.apply(t, orderInstructions).toMatrix();
+}
+
+
 
 // Auxillary Functions
 
