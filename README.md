@@ -623,10 +623,27 @@ Returns the numbers of columns in the table
 ### getRow
 Returns the values of the i-th row (0 based_ in an array)
 
+#### Arguments
+<b>row</b>:The 0-based Row number
+
+#### Example
 ```javascript
 customers.getRow(2);
 
 // [3, "DE", 113.5]
+```
+
+### getRowObject
+Returns a dictionary of the row with the field names as headers and the row values as values.
+
+#### Arguments
+<b>row</b>:The 0-based Row number
+
+#### Example
+```javascript
+customers.getRowObject(2)
+
+// {"Customer ID": 3, "Country":"DE", "Revenue": 113.5}
 ```
 
 ### table (Object)
