@@ -69,6 +69,22 @@ var countryData = [
 var countries = JSplyr.createTableFromMatrix(countryData);
 ```
 
+### createTableFomObjects
+Takes an array of dictionaries and returns a table created from them.  
+Technically you can provide an array of arbitrary objects, the table fields will be all fields of the first object in the Array.
+
+#### Arguments
+<b>data</b>: An Array of dictionaries
+
+#### Example
+```javascript
+var stuff = [
+  {H1: 1, H2: 2, H3: 3},
+  {H1: 4, H2: 5, H3: 6}
+];
+
+var stuffTable = JSplyr.createTableFromObjects(stuff);
+```
 
 ## 2. Table methods and attributes
 A JSplyr table object has a list of methods that should be familiar to users of SQL and dplyr.
