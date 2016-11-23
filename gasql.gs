@@ -563,10 +563,10 @@ JSplyr.Table.prototype.cols = function() {
 
 
 /**
- * The i-th row of a table
+ * The i-th row's of a table as an array
  *
  * @param {Number} i The row number to be retrieved (0-based).
- * @return {Array} An array of the values in the i-th row.
+ * @return {Object[]} An array of the values in the i-th row.
  */
 JSplyr.Table.prototype.getRow = function(i) {
   if (!(i % 1 !== 0 && i >= 0)) {
@@ -575,6 +575,22 @@ JSplyr.Table.prototype.getRow = function(i) {
 
   var fields = this.getFields();
   return fields.map(function(field) {return this.table[field][i];});
+}
+
+
+/**
+ * The i-th row of a table as a dictionary
+ *
+ * @param {Number} i The row number to be retrieved (0-based).
+ * @return {Object} An array of the values in the i-th row.
+ */
+JSplyr.Table.prototype.getRowObject = function(i) {
+  var fields = this.getFields();
+  var output = {};
+  fields.forEach(function(field) {
+    output[field] = this.getColumn(field)[i];
+  }, this)
+  return output;
 }
 
 
