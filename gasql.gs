@@ -34,7 +34,7 @@ JSplyr.createTable = function(table) {
  * Each element of the outer array is a row.
  * Each element of the inner arrays is a column in that row.
  *
- * @param {Array} data The 2d array to be converted into a table.
+ * @param {Object[][]} data The 2d array to be converted into a table.
  * @return {Table} The input as a table instance.
  */
 JSplyr.createTableFromMatrix = function(data) {
@@ -58,6 +58,28 @@ JSplyr.createTableFromMatrix = function(data) {
 
   return JSplyr.createTable(makeTable());
 };
+
+
+/**
+ * Creates a table from an array of dictionaries
+ *
+ * @param {Object[]} data The Array of dictionaries
+ * @return {Table} The input as a table instance.
+ */
+JSplyr.createTableFromObjects = function(data) {
+  if (!Array.isArray(data) || data.length < 1) {
+    throw "Must have a least on dict in Array to construct a table"
+  }
+  var fields = Object.keys(data[0]);
+  var rawTable = {};
+  fields.forEach(function(field) {rawTable[field] = [];});
+  data.forEach(function(row) {
+    fields.forEach(function(field) {
+      rawTable[field].push(row[field]);
+    })
+  })
+  return JSplyr.createTable(rawTable);
+}
 
 
 /**
