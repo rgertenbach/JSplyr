@@ -348,6 +348,52 @@ The array must have the same length as the table has rows.
 <b>values:</b> An array of values that will be the new column
 <b>alias:></b> The name the new field should have
 
+### applyTVF
+Applies a table valued function to the table.   
+The TVF takes every row of the table separately and returns 0 or more output rows.
+
+The TVF supplied will take a Row dictionary with the field names as keys and the cell values as values as the first parameter and an arbitrary amount of additional parameters you supply as an array to applyTVF.  
+
+The output of the TVF needs to be an Array of dictionaries, the dictionary of the first processed row that is not empty will serve as the prototype for the table.
+
+#### Arguments
+<b>tvf</b>: The Table valued function taking an object as its first parameter.
+<b>params</b>: An array of parameters supplied as the following parameters to the TVF.
+
+#### Example
+```javascript
+var data = [["H1", "H2", "H3"],
+[1,2,[31, 32]],
+[4,5,[61]],
+[7,8,[]]];
+
+var t = JSplyr.createTableFromMatrix(data);
+
+function flatten(o, repeatedField) {
+  var fields = Object.keys(o);
+  var repeated = o[repeatedField];
+  var output = [];
+
+  repeated.forEach(function(x) {
+    var row = {};
+    fields.forEach(function(field) {
+      row[field] = (field !== repeatedField ? o[field] : x);
+    });
+    output.push(row);
+  });
+  return output;
+}
+
+t.applyTVF(flatten, "H3").toString();
+
+//  | H1 | H2 | H3 |
+//  | -- | -- | -- |
+// 1| 1  | 2  | 31 |
+// 2| 1  | 2  | 32 |
+// 3| 4  | 5  | 61 |
+
+```
+
 ### toString()
 Overload of the toString generic.
 This funtions supports nested objects and has representations for many types:
