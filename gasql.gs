@@ -1294,3 +1294,31 @@ JSplyr.Table.prototype.order_by = function() {
 
   return JSplyr.createTable(output);
 }
+
+
+/**
+ * Applies a TVF to every row of a table.
+ * The TVF will take a function that takes the row object and additonal params.
+ * The TVF will return an Object with the headers as keys and cells as values.
+ * It will return 0 or more rows for every row as a table.
+ *
+ * @param {function} tvf Function taking an Object returning an array of objects
+ * @param {Object[]} params An array with additional parameters
+ */
+JSplyr.Table.prototype.applyTVF = function(tvf, params) {
+  var fields = this.getFields();
+  if (params === undefined) {
+    params = [];
+  } else if (!Array.isArray(params)) {
+    params = [params];
+  }
+
+  var tvfApplied = this.getColumn(fields[0]).map(function(_, rowI) {
+    var row = this.getRowObject(rowI);
+
+    return tvf.apply(null, [row].concat(params));
+  }, this);
+  var outputRaw = [].concat.apply([], tvfApplied);
+  console.log(outputRaw)
+  return JSplyr.createTableFromObjects(outputRaw);
+}
