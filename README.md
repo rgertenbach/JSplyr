@@ -69,6 +69,22 @@ var countryData = [
 var countries = JSplyr.createTableFromMatrix(countryData);
 ```
 
+### createTableFomObjects
+Takes an array of dictionaries and returns a table created from them.  
+Technically you can provide an array of arbitrary objects, the table fields will be all fields of the first object in the Array.
+
+#### Arguments
+<b>data</b>: An Array of dictionaries
+
+#### Example
+```javascript
+var stuff = [
+  {H1: 1, H2: 2, H3: 3},
+  {H1: 4, H2: 5, H3: 6}
+];
+
+var stuffTable = JSplyr.createTableFromObjects(stuff);
+```
 
 ## 2. Table methods and attributes
 A JSplyr table object has a list of methods that should be familiar to users of SQL and dplyr.
@@ -220,7 +236,7 @@ It takes an optional offset parameter and returns up to as many rows as specifie
 
 #### Arguments
 
-<b>llimit:</b> The number of rows to limit the output by. This is the number of natural rows. of the table. If content has been groped then a group is one row.
+<b>llimit:</b> The number of rows to limit the output by. This is the number of natural rows. of the table. If content has been groped then a group is one row.  
 <b>offset:</b> The number of rows to skip from the first row. This parameter is 0 based. An offset of 1 starts at the second row.
 
 #### Example
@@ -329,8 +345,54 @@ The array must have the same length as the table has rows.
 
 #### Arguments
 
-<b>values:</b> An array of values that will be the new column
+<b>values:</b> An array of values that will be the new column  
 <b>alias:></b> The name the new field should have
+
+### applyTVF
+Applies a table valued function to the table.   
+The TVF takes every row of the table separately and returns 0 or more output rows.
+
+The TVF supplied will take a Row dictionary with the field names as keys and the cell values as values as the first parameter and an arbitrary amount of additional parameters you supply as an array to applyTVF.  
+
+The output of the TVF needs to be an Array of dictionaries, the dictionary of the first processed row that is not empty will serve as the prototype for the table.
+
+#### Arguments
+<b>tvf</b>: The Table valued function taking an object as its first parameter.  
+<b>params</b>: An array of parameters supplied as the following parameters to the TVF.
+
+#### Example
+```javascript
+var data = [["H1", "H2", "H3"],
+[1,2,[31, 32]],
+[4,5,[61]],
+[7,8,[]]];
+
+var t = JSplyr.createTableFromMatrix(data);
+
+function flatten(o, repeatedField) {
+  var fields = Object.keys(o);
+  var repeated = o[repeatedField];
+  var output = [];
+
+  repeated.forEach(function(x) {
+    var row = {};
+    fields.forEach(function(field) {
+      row[field] = (field !== repeatedField ? o[field] : x);
+    });
+    output.push(row);
+  });
+  return output;
+}
+
+t.applyTVF(flatten, "H3").toString();
+
+//  | H1 | H2 | H3 |
+//  | -- | -- | -- |
+// 1| 1  | 2  | 31 |
+// 2| 1  | 2  | 32 |
+// 3| 4  | 5  | 61 |
+
+```
 
 ### toString()
 Overload of the toString generic.
@@ -623,10 +685,27 @@ Returns the numbers of columns in the table
 ### getRow
 Returns the values of the i-th row (0 based_ in an array)
 
+#### Arguments
+<b>row</b>:The 0-based Row number
+
+#### Example
 ```javascript
 customers.getRow(2);
 
 // [3, "DE", 113.5]
+```
+
+### getRowObject
+Returns a dictionary of the row with the field names as headers and the row values as values.
+
+#### Arguments
+<b>row</b>:The 0-based Row number
+
+#### Example
+```javascript
+customers.getRowObject(2)
+
+// {"Customer ID": 3, "Country":"DE", "Revenue": 113.5}
 ```
 
 ### table (Object)

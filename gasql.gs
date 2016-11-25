@@ -34,7 +34,7 @@ JSplyr.createTable = function(table) {
  * Each element of the outer array is a row.
  * Each element of the inner arrays is a column in that row.
  *
- * @param {Array} data The 2d array to be converted into a table.
+ * @param {Object[][]} data The 2d array to be converted into a table.
  * @return {Table} The input as a table instance.
  */
 JSplyr.createTableFromMatrix = function(data) {
@@ -58,6 +58,28 @@ JSplyr.createTableFromMatrix = function(data) {
 
   return JSplyr.createTable(makeTable());
 };
+
+
+/**
+ * Creates a table from an array of dictionaries
+ *
+ * @param {Object[]} data The Array of dictionaries
+ * @return {Table} The input as a table instance.
+ */
+JSplyr.createTableFromObjects = function(data) {
+  if (!Array.isArray(data) || data.length < 1) {
+    throw "Must have a least on dict in Array to construct a table"
+  }
+  var fields = Object.keys(data[0]);
+  var rawTable = {};
+  fields.forEach(function(field) {rawTable[field] = [];});
+  data.forEach(function(row) {
+    fields.forEach(function(field) {
+      rawTable[field].push(row[field]);
+    })
+  })
+  return JSplyr.createTable(rawTable);
+}
 
 
 /**
@@ -563,10 +585,10 @@ JSplyr.Table.prototype.cols = function() {
 
 
 /**
- * The i-th row of a table
+ * The i-th row's of a table as an array
  *
  * @param {Number} i The row number to be retrieved (0-based).
- * @return {Array} An array of the values in the i-th row.
+ * @return {Object[]} An array of the values in the i-th row.
  */
 JSplyr.Table.prototype.getRow = function(i) {
   if (!(i % 1 !== 0 && i >= 0)) {
@@ -575,6 +597,22 @@ JSplyr.Table.prototype.getRow = function(i) {
 
   var fields = this.getFields();
   return fields.map(function(field) {return this.table[field][i];});
+}
+
+
+/**
+ * The i-th row of a table as a dictionary
+ *
+ * @param {Number} i The row number to be retrieved (0-based).
+ * @return {Object} An array of the values in the i-th row.
+ */
+JSplyr.Table.prototype.getRowObject = function(i) {
+  var fields = this.getFields();
+  var output = {};
+  fields.forEach(function(field) {
+    output[field] = this.getColumn(field)[i];
+  }, this)
+  return output;
 }
 
 
@@ -1255,4 +1293,32 @@ JSplyr.Table.prototype.order_by = function() {
   }, this);
 
   return JSplyr.createTable(output);
+}
+
+
+/**
+ * Applies a TVF to every row of a table.
+ * The TVF will take a function that takes the row object and additonal params.
+ * The TVF will return an Object with the headers as keys and cells as values.
+ * It will return 0 or more rows for every row as a table.
+ *
+ * @param {function} tvf Function taking an Object returning an array of objects
+ * @param {Object[]} params An array with additional parameters
+ */
+JSplyr.Table.prototype.applyTVF = function(tvf, params) {
+  var fields = this.getFields();
+  if (params === undefined) {
+    params = [];
+  } else if (!Array.isArray(params)) {
+    params = [params];
+  }
+
+  var tvfApplied = this.getColumn(fields[0]).map(function(_, rowI) {
+    var row = this.getRowObject(rowI);
+
+    return tvf.apply(null, [row].concat(params));
+  }, this);
+  var outputRaw = [].concat.apply([], tvfApplied);
+  console.log(outputRaw)
+  return JSplyr.createTableFromObjects(outputRaw);
 }
