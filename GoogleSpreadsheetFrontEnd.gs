@@ -174,6 +174,24 @@ function TABLE_ORDER(table, fields, order) {
 }
 
 
+/**
+ * Applies a JavaScript function that takes each row as an input and produces 0 or more output rows.
+ * Each Row is supplied as a JavaScipt object with the column header as the key.
+ *
+ * @param {A1:F10} table The table
+ * @param {"flatten"} The TVF to apply
+ * @param {"countries"} A field or range of constants or field references to be supplied to the TVF as parameters.
+ * @customfunction
+ */
+function TABLE_TVF(table, fun, params) {
+  fun = this[fun];
+  params = arrayify(params);
+  
+  var t = JSplyr.createTableFromMatrix(table);
+  return t.applyTVF(fun, params).toMatrix();
+}
+
+
 
 // Auxillary Functions
 
