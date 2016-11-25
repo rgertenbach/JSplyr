@@ -236,7 +236,7 @@ It takes an optional offset parameter and returns up to as many rows as specifie
 
 #### Arguments
 
-<b>llimit:</b> The number of rows to limit the output by. This is the number of natural rows. of the table. If content has been groped then a group is one row.
+<b>llimit:</b> The number of rows to limit the output by. This is the number of natural rows. of the table. If content has been groped then a group is one row.  
 <b>offset:</b> The number of rows to skip from the first row. This parameter is 0 based. An offset of 1 starts at the second row.
 
 #### Example
@@ -345,7 +345,7 @@ The array must have the same length as the table has rows.
 
 #### Arguments
 
-<b>values:</b> An array of values that will be the new column
+<b>values:</b> An array of values that will be the new column  
 <b>alias:></b> The name the new field should have
 
 ### applyTVF
@@ -357,7 +357,7 @@ The TVF supplied will take a Row dictionary with the field names as keys and the
 The output of the TVF needs to be an Array of dictionaries, the dictionary of the first processed row that is not empty will serve as the prototype for the table.
 
 #### Arguments
-<b>tvf</b>: The Table valued function taking an object as its first parameter.
+<b>tvf</b>: The Table valued function taking an object as its first parameter.  
 <b>params</b>: An array of parameters supplied as the following parameters to the TVF.
 
 #### Example
