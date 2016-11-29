@@ -82,7 +82,9 @@ function TABLE_LIMIT(table, limit, offset) {
 function TABLE_MUTATE(table, fun, alias, params) {
   var t = JSplyr.createTableFromMatrix(table);
   var fields = t.getFields();
-  var f = JSplyr.fun.apply(null, [this[fun], alias].concat(params)); 
+  var func = eval(cache.get(fun)) || this[fun];
+
+  var f = JSplyr.fun.apply(null, [func, alias].concat(params)); 
   return JSplyr.Table.prototype.select.apply(t, fields.concat(f)).toMatrix();
 }
 
