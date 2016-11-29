@@ -1,3 +1,5 @@
+cache = CacheService.getDocumentCache();
+
 /**
  * Selects a list of Columns from a Table
  *
@@ -218,6 +220,43 @@ function matrixToList(matrix, shorten) {
  */
 function arrayify(x) {
   return Array.isArray(x) ? matrixToList(x) : [x];
+}
+
+
+/**
+ * Registers a JavaScript function under a given name.  
+ *
+ * The main purpose of this function is to define mutators, aggregators and tvfs
+ * without having to go into the script editor, instead having them visible in the trix.
+ *
+ * @param {lower} name The alias of the function
+ * @param {function(x){return x.toLowerCase();}} body The function definition
+ * @return {lower} The alias of the function
+ * @customfunction
+ */
+function SET_FUN(name, body) {
+  cache.put(name, eval(body));
+  return name
+}
+
+
+/**
+ * Calls a function defined with SET_FUN.  
+ *
+ * Follow the name argument with any number of arguments which are passed onto the function.
+ *
+ * @param {"lower"} name The name of the function
+ * @return {"hello"} The output of the function 
+ * @customfunction
+ */
+function CALL_FUN(name) {
+  var fun = eval(cache.get(name));
+  var args = Object
+      .keys(arguments)
+      .filter(function(key) {return key > 0;})
+      .map(function(key) {return this[key];}, arguments);
+
+  return fun.apply(null, args);
 }
 
 
