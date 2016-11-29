@@ -122,7 +122,8 @@ function TABLE_AGG(table, group_fields, fun, alias, params) {
   group_fields = arrayify(group_fields).filter(function(x) {return x.length});
   params = arrayify(params);
   var g = JSplyr.Table.prototype.group_by.apply(t, group_fields);
-  var funObj = JSplyr.fun.apply(null, [this[fun], alias].concat(params)); 
+  var func = eval(cache.get(fun)) || this[fun];
+  var funObj = JSplyr.fun.apply(null, [func, alias].concat(params)); 
   return JSplyr.Table.prototype.select.apply(g, group_fields.concat(funObj)).toMatrix();
 }
 
@@ -188,11 +189,11 @@ function TABLE_ORDER(table, fields, order) {
  * @customfunction
  */
 function TABLE_TVF(table, fun, params) {
-  fun = this[fun];
+  var func = eval(cache.get(fun)) || this[fun];
   params = arrayify(params);
   
   var t = JSplyr.createTableFromMatrix(table);
-  return t.applyTVF(fun, params).toMatrix();
+  return t.applyTVF(func, params).toMatrix();
 }
 
 
