@@ -46,13 +46,13 @@ JSplyr.createTableFromMatrix = function(data) {
 
   function makeTable() {
     var output = {};
-    for (var col in data[0]) {
-      var field = data[0][col];
-      output[field] = [];
-      for (var row = 1; row < data.length; row++) {
-        output[field].push(data[row][col]);
-      }
+
+    function populateColumn(field, col) {   
+      function extractColumn(row) {return row[col];}
+      output[field] = data.map(extractColumn);
     }
+
+    data[0].forEach(populateColumn);
     return output;
   }
 
@@ -830,7 +830,7 @@ JSplyr.Table.prototype.is = function(comp) {
   var optArgs = args.map(
     function(arg) {return createComparator(arg, this);}, 
     this); 
-  
+
   for (var row in lopf) {
     var optArgsForRow = optArgs.map(function(arg) {return arg[row];});
     output.push((fields.indexOf(op) !== -1 ?
