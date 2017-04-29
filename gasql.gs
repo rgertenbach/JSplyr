@@ -197,10 +197,13 @@ JSplyr.objectToArray = function(object) {
  * @param {Object} lop The left operand. Can be a field name or a literal.
  * @param {Object} op The operand.
  * @param {Object} rop The right operand. Can be a field name or a literal.
+ * @param {...} ... Opt arguments supplied to the function. Field or literal.
  * @return {Object} An object containing the three arguments.
  */
 JSplyr.comp = function(lop, op, rop) {
-  return {_JSplyrName: "comparison", lop: lop, op: op, rop: rop};
+  var args = JSplyr.objectToArray(arguments);
+  var optArgs = args.slice(3, args.length);
+  return {_JSplyrName: "comparison", lop: lop, op: op, rop: rop, args: optArgs};
 }
 
 
@@ -789,6 +792,7 @@ JSplyr.Table.prototype.is = function(comp) {
   var lop = comp.lop;
   var op = comp.op;
   var rop = comp.rop;
+  var args = comp.args;
   var fields = this.getFields();
   var output = [];
 
@@ -818,17 +822,22 @@ JSplyr.Table.prototype.is = function(comp) {
     } if (JSplyr.isObject(side, "function")) {
       return thisArg.applyScalar(side)
     }
-    return JSplyr.
-    repeat(side, thisArg.rows());
+    return JSplyr.repeat(side, thisArg.rows());
   }
 
   var lopf = createComparator(lop, this);
   var ropf = createComparator(rop, this);
-
+  var optArgs = args.map(
+    function(arg) {return createComparator(arg, this);}, 
+    this); 
+  
   for (var row in lopf) {
+    var optArgsForRow = optArgs.map(function(arg) {return arg[row];});
     output.push((fields.indexOf(op) !== -1 ?
         operations[op][row] :
-        operations[op])(lopf[row], ropf[row]));
+        operations[op]).apply(
+          this, 
+          [lopf[row], ropf[row]].concat(optArgsForRow))); 
   }
 
   return output;
