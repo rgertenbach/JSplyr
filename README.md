@@ -543,6 +543,51 @@ Transforms an array like object into an actual array. Can be used to convert the
 
 <b>object:</b> The object to be converted into an array
 
+### JSplyr.multiSubscript
+Subsets multiple arrays by the same index
+
+#### Arguments
+
+<b>index</b> The 0-based index.
+<b>...</b> 0 or more Arrays
+
+#### Example
+
+```javascript
+JSplyr.multiSubscript(1, [1, 2, 3], [4, 5, 6]);
+// Returns: [2,5]
+```
+
+### JSplyr.both
+Whether two elements are both true.
+To be used in functional programming pipelines, e.g. Array.prototype.reduce
+
+#### Arguments
+
+<b>a</b> A boolean
+<b>b</b> A boolean
+
+#### Example
+
+```javascript
+JSplyr.both(true, false);
+// Returns: false
+```
+
+### JSplyr.all
+Whether all elements in an array are true.
+
+#### Arguments
+
+<b>v</b> An array
+
+#### Example
+
+```javascript
+JSplyr.all([true, true, false]);
+// Returns: false
+```
+
 ### JSplyr.arrayAnd
 Entry-wise logical and of one or more arrays
 
