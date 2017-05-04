@@ -47,7 +47,7 @@ JSplyr.createTableFromMatrix = function(data) {
   function makeTable() {
     var output = {};
 
-    function populateColumn(field, col) {   
+    function populateColumn(field, col) {
       function extractColumn(row) {return row[col];}
       output[field] = data.map(extractColumn);
     }
@@ -79,7 +79,7 @@ JSplyr.createTableFromObjects = function(data) {
     })
   })
   return JSplyr.createTable(rawTable);
-}
+};
 
 
 /**
@@ -129,6 +129,44 @@ JSplyr.fun = function(fun, alias) {
 
 
 /**
+ * Gets the i-th values of each array suuplied
+ *
+ * @param {Int} index The position (0-based)
+ * @param {<*[]>] optional arrays
+ * @param {*[]} One array
+ */
+JSplyr.multiSubscript = function(index) {
+  var args = JSplyr.objectToArray(arguments).slice(1);
+  function getAtPosition(a) {return a[index];};
+  return args.map(getAtPosition);
+};
+
+
+/**
+ * Whether a and b are both true
+ * can be used in functional programs as a reducer.
+ *
+ * @param {Boolean} a
+ * @param {Boolean} b
+ * @return {Boolean}
+ */
+JSplyr.both = function(a, b) {
+  return a && b;
+};
+
+
+/**
+ * Whether all elements of a vector are true.
+ *
+ * @param {Boolean[]} v
+ * @return {Boolean}
+ */
+JSplyr.all = function(v) {
+  return v.reduce(JSplyr.both, this, true);
+};
+
+
+/**
  * Logical and applied to a list of arrays.
  *
  * k Arrays of length n will return an array of length n where each row is the
@@ -138,13 +176,15 @@ JSplyr.fun = function(fun, alias) {
  * @return {Array} The resulting vector of true/false values.
  */
 JSplyr.arrayAnd = function() {
-  var arguments = JSplyr.objectToArray(arguments);
+  var args = JSplyr.objectToArray(arguments);
   var output = [];
 
-  for (var row in arguments[0]) {
-    output.push(arguments.reduce(function(a,b) {return a[row] && b[row];}));
-  }
-  return output;
+  function getWholeRow(_, i) {
+    return JSplyr.multiSubscript.apply({},[i].concat(args));
+  };
+
+  if (args.length === 0) {return undefined;}
+  return args[0].map(getWholeRow).map(JSplyr.all);
 };
 
 
@@ -204,7 +244,7 @@ JSplyr.comp = function(lop, op, rop) {
   var args = JSplyr.objectToArray(arguments);
   var optArgs = args.slice(3, args.length);
   return {_JSplyrName: "comparison", lop: lop, op: op, rop: rop, args: optArgs};
-}
+};
 
 
 /**
@@ -273,7 +313,7 @@ JSplyr.evaluateLogicalCombination = function(comb, target) {
  */
 JSplyr.asc = function(field) {
   return {_JSplyrName: "order param", type: "asc", field: field};
-}
+};
 
 
 /**
@@ -282,7 +322,7 @@ JSplyr.asc = function(field) {
  */
 JSplyr.desc = function(field) {
   return {_JSplyrName: "order param", type: "desc", field: field};
-}
+};
 
 
 /**
@@ -301,7 +341,7 @@ JSplyr.createOutput = function(fields) {
       output[field.alias] = [];
     }});
   return output;
-}
+};
 
 
 /**
@@ -337,7 +377,7 @@ JSplyr.range = function(a, b, c) {
  */
 JSplyr.isIn = function(x, y) {
   return y.indexOf(x) !== -1;
-}
+};
 
 
 /**
@@ -351,7 +391,7 @@ JSplyr.unique = function(a) {
   var output = [];
   a.map(function(e) {if (!JSplyr.isIn(e, output)) {output.push(e);}});
   return output;
-}
+};
 
 
 /**
@@ -371,7 +411,7 @@ JSplyr.repeat = function(x, n) {
     n--;
   }
   return output;
-}
+};
 
 
 /**
@@ -384,7 +424,7 @@ JSplyr.repeat = function(x, n) {
 JSplyr.repeatString = function(str, n, joinkey) {
   joinkey = joinkey || "";
   return JSplyr.repeat(str, n).join(joinkey);
-}
+};
 
 
 /**
@@ -401,7 +441,7 @@ JSplyr.equalArrays = function(a1, a2) {
     }
   }
   return true;
-}
+};
 
 
 JSplyr.stringifier = Object.create(null);
@@ -417,7 +457,7 @@ JSplyr.stringifier.numberCharacterizer = function(x) {
     height: 1,
     width: String(x).length
   }
-}
+};
 
 
 /**
@@ -430,7 +470,7 @@ JSplyr.stringifier.stringCharacterizer = function(x) {
   var rows = x.split(findNewlines);
   var maxWidth = rows.reduce(function(x, y) {return x.length > y.length ? x : y});
   return {content: x, type: "string", width: maxWidth.length, height: height}
-}
+};
 
 
 /**
@@ -439,7 +479,7 @@ JSplyr.stringifier.stringCharacterizer = function(x) {
 JSplyr.stringifier.functionCharacterizer = function(x) {
   var fString = x.toString().replace(/\r/g, "");
   return JSplyr.stringifier.stringCharacterizer(fString);
-}
+};
 
 
 /**
@@ -453,7 +493,7 @@ JSplyr.stringifier.arrayCharacterizer = function(x) {
     "]";
   var output = JSplyr.stringifier.stringCharacterizer(outputContent)
   return output;
-}
+};
 
 
 /**
@@ -531,7 +571,7 @@ JSplyr.stringifier.tableCharacterizer = function(x) {
   }
 
   return JSplyr.stringifier.stringCharacterizer(output);
-}
+};
 
 
 /**
@@ -540,7 +580,7 @@ JSplyr.stringifier.tableCharacterizer = function(x) {
 JSplyr.stringifier.objectCharacterizer = function(x) {
   var stringifiedX = JSplyr.stringifier.stringCharacterizer(x.toString());
   return stringifiedX;
-}
+};
 
 
 /**
@@ -553,7 +593,7 @@ JSplyr.stringifier.characterize = function(x) {
   if (Array.isArray(x)) return JSplyr.stringifier.arrayCharacterizer(x);
   if (JSplyr.isObject(x, "Table")) return JSplyr.stringifier.tableCharacterizer(x);
   return JSplyr.stringifier.objectCharacterizer(x);
-}
+};
 
 
 /**
@@ -561,7 +601,7 @@ JSplyr.stringifier.characterize = function(x) {
  */
 JSplyr.Table.prototype.toString = function() {
   return JSplyr.stringifier.tableCharacterizer(this).content;
-}
+};
 
 
 JSplyr.Table.prototype._JSplyrName = "Table";
@@ -574,7 +614,7 @@ JSplyr.Table.prototype._JSplyrName = "Table";
  */
 JSplyr.Table.prototype.getFields = function() {
   return Object.keys(this.table)
-}
+};
 
 
 /**
@@ -584,7 +624,7 @@ JSplyr.Table.prototype.getFields = function() {
  */
 JSplyr.Table.prototype.cols = function() {
   return this.getFields().length;
-}
+};
 
 
 /**
@@ -600,7 +640,7 @@ JSplyr.Table.prototype.getRow = function(i) {
 
   var fields = this.getFields();
   return fields.map(function(field) {return this.table[field][i];});
-}
+};
 
 
 /**
@@ -616,7 +656,7 @@ JSplyr.Table.prototype.getRowObject = function(i) {
     output[field] = this.getColumn(field)[i];
   }, this)
   return output;
-}
+};
 
 
 /**
@@ -630,7 +670,7 @@ JSplyr.Table.prototype.getColumn = function(col) {
     throw "Column does not exist"
   }
   return this.table[col];
-}
+};
 
 
 /**
@@ -640,7 +680,7 @@ JSplyr.Table.prototype.getColumn = function(col) {
  */
 JSplyr.Table.prototype.rows = function() {
   return this.table[this.getFields()[0]].length;
-}
+};
 
 
 /**
@@ -659,7 +699,7 @@ JSplyr.Table.prototype.limit = function(limit, offset) {
     output[field] = this.table[field].splice(offset, limit);
   }, this);
   return JSplyr.createTable(output);
-}
+};
 
 
 /**
@@ -682,7 +722,7 @@ JSplyr.Table.prototype.toMatrix = function() {
     }, this));
   }
   return output;
-}
+};
 
 
 /**
@@ -702,7 +742,7 @@ JSplyr.Table.prototype.addColumn = function (values, alias) {
   output = this.table;
   output[alias] = values;
   return JSplyr.createTable(output);
-}
+};
 
 
 /**
@@ -741,7 +781,7 @@ JSplyr.Table.prototype.select = function() {
   }
   }, this);
   return JSplyr.createTable(output);
-}
+};
 
 
 /**
@@ -771,7 +811,7 @@ JSplyr.Table.prototype.applyScalar = function(fun) {
     output.push(fun.fun.apply(this, currentArgs));
   }
   return output;
-}
+};
 
 
 /**
@@ -828,20 +868,20 @@ JSplyr.Table.prototype.is = function(comp) {
   var lopf = createComparator(lop, this);
   var ropf = createComparator(rop, this);
   var optArgs = args.map(
-    function(arg) {return createComparator(arg, this);}, 
-    this); 
+    function(arg) {return createComparator(arg, this);},
+    this);
 
   for (var row in lopf) {
     var optArgsForRow = optArgs.map(function(arg) {return arg[row];});
     output.push((fields.indexOf(op) !== -1 ?
         operations[op][row] :
         operations[op]).apply(
-          this, 
-          [lopf[row], ropf[row]].concat(optArgsForRow))); 
+          this,
+          [lopf[row], ropf[row]].concat(optArgsForRow)));
   }
 
   return output;
-}
+};
 
 
 /**
@@ -862,7 +902,7 @@ JSplyr.Table.prototype.filter = function(criterion) {
     }
   }
   return JSplyr.createTable(output);
-}
+};
 
 
 /**
@@ -876,7 +916,7 @@ JSplyr.Table.prototype.where = function(expr) {
   } else {
     throw "Expression must be a comparison or logical combination!";
   }
-}
+};
 
 
 /**
@@ -935,7 +975,7 @@ JSplyr.Table.prototype.union = function(t, behavior, empty) {
     appendRows(t, field, rfields, rfillupNeeded)
   }, this);
   return JSplyr.createTable(output);
-}
+};
 
 
 /**
@@ -993,7 +1033,7 @@ JSplyr.Table.prototype.group_by = function() {
     appendRow(found, this);
   }
   return JSplyr.createTable(nested);
-}
+};
 
 
 /**
@@ -1026,7 +1066,7 @@ JSplyr.Table.prototype.flatten = function(field) {
     }
   }
   return JSplyr.createTable(output);
-}
+};
 
 
 /**
@@ -1180,7 +1220,7 @@ JSplyr.Table.prototype.join = function(right, method, lKeys, rKeys, empty) {
     results = results.union(b);
   }
   return results;
-}
+};
 
 
 /**
@@ -1235,7 +1275,7 @@ JSplyr.Table.prototype.rankOrder = function(field, dense) {
     }
   }
   return ranks;
-}
+};
 
 
 /**
@@ -1302,7 +1342,7 @@ JSplyr.Table.prototype.order_by = function() {
   }, this);
 
   return JSplyr.createTable(output);
-}
+};
 
 
 /**
@@ -1330,4 +1370,4 @@ JSplyr.Table.prototype.applyTVF = function(tvf, params) {
   var outputRaw = [].concat.apply([], tvfApplied);
   console.log(outputRaw)
   return JSplyr.createTableFromObjects(outputRaw);
-}
+};
