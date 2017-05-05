@@ -156,13 +156,37 @@ JSplyr.both = function(a, b) {
 
 
 /**
+ * Whether at least one of a or b is true
+ * can be used in functional programs as a reducer.
+ *
+ * @param {Boolean} a
+ * @param {Boolean} b
+ * @return {Boolean}
+ */
+JSplyr.either = function(a, b) {
+  return a || b;
+};
+
+
+/**
  * Whether all elements of a vector are true.
  *
  * @param {Boolean[]} v
  * @return {Boolean}
  */
 JSplyr.all = function(v) {
-  return v.reduce(JSplyr.both, this, true);
+  return v.reduce(JSplyr.both, {}, true); // No idea why this needs {}...
+};
+
+
+/**
+ * Whether any element of a vector is true.
+ *
+ * @param {Boolean[]} v
+ * @return {Boolean}
+ */
+JSplyr.any = function(v) {
+  return v.reduce(JSplyr.either, undefined, false); // But this needs undefined?
 };
 
 
@@ -177,7 +201,6 @@ JSplyr.all = function(v) {
  */
 JSplyr.arrayAnd = function() {
   var args = JSplyr.objectToArray(arguments);
-  var output = [];
 
   function getWholeRow(_, i) {
     return JSplyr.multiSubscript.apply({},[i].concat(args));
@@ -198,13 +221,14 @@ JSplyr.arrayAnd = function() {
  * @return {Array} The resulting vector of true/false values.
  */
 JSplyr.arrayOr = function() {
-  var arguments = JSplyr.objectToArray(arguments);
-  var output = [];
+  var args = JSplyr.objectToArray(arguments);
 
-  for (var row in arguments[0]) {
-    output.push(arguments.reduce(function(a,b) {return a[row] || b[row];}));
-  }
-  return output;
+  function getWholeRow(_, i) {
+    return JSplyr.multiSubscript.apply({},[i].concat(args));
+  };
+
+  if (args.length === 0) {return undefined;}
+  return args[0].map(getWholeRow).map(JSplyr.any);
 };
 
 
