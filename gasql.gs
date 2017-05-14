@@ -49,7 +49,8 @@ JSplyr.createTableFromMatrix = function(data) {
 
     function populateColumn(field, col) {
       function extractColumn(row) {return row[col];}
-      output[field] = data.map(extractColumn);
+      function indexGreater0(_, i) {return i > 0;};
+        output[field] = data.filter(indexGreater0).map(extractColumn);
     }
 
     data[0].forEach(populateColumn);
@@ -529,29 +530,30 @@ JSplyr.stringifier.tableCharacterizer = function(x) {
     return row.map(JSplyr.stringifier.characterize);});
   var fields = x.getFields();
   var colWidths = o[0].map(function(x) {return x.width});
-  JSplyr.range(1, x.rows() + 1).map(function(row) {
+  // Find widest row of each column
+  JSplyr.range(1, x.rows() + 1).forEach(function(row) {
     for (var col in colWidths) {
       if (o[row][col].width > colWidths[col]) {
         colWidths[col] = o[row][col].width;
       }
     }
-  })
+  });
 
   var rowHeights = o.map(function(row) {
-    return row.map(function(x) {return x.height})
-              .reduce(function(x, y) {return x > y ? x : y})
+    return row
+        .map(function(x) {return x.height;})
+        .reduce(function(x, y) {return x > y ? x : y;})
   });
 
   /**
    * function to create matrix for row containing subrows that can be parsed
-   * into a string
+   * into a string to handle linebreaks
    */
   function rowMatrix(row) {
     // Create Subrows
-    var columns = [];
-    for (var col in fields) {
-      columns.push(o[row][col].content.split(/[\n\r]/));
-    }
+    var columns = fields.map(function(_, col) {
+      return o[row][col].content.split(/[\n\r]/);
+    });
 
     // Standardize subrows to # of subrows the row needs
     for (var col in o[row]) {
@@ -567,7 +569,7 @@ JSplyr.stringifier.tableCharacterizer = function(x) {
       }
     }
     return columns
-  }
+  };
 
   var output = "";
   var rowNumberFiller = JSplyr.repeatString(
@@ -577,7 +579,7 @@ JSplyr.stringifier.tableCharacterizer = function(x) {
     if (row == 1) {
       output += JSplyr.repeatString(" ", rowNumberFiller.length) + "| " +
                 colWidths.map(function(w) {return JSplyr.repeatString("-", w)}
-                        ).join(" | ") + " |\n"
+                        ).join(" | ") + " |\n";
 
     }
     var currentRow = rowMatrix(row);
@@ -592,7 +594,7 @@ JSplyr.stringifier.tableCharacterizer = function(x) {
       output += currentRow.map(function(col) {return col[subRow]}).join(" | ");
       output += " |\n";
     }
-  }
+  };
 
   return JSplyr.stringifier.stringCharacterizer(output);
 };
@@ -658,12 +660,12 @@ JSplyr.Table.prototype.cols = function() {
  * @return {Object[]} An array of the values in the i-th row.
  */
 JSplyr.Table.prototype.getRow = function(i) {
-  if (!(i % 1 !== 0 && i >= 0)) {
-    throw "row must be an integer greatern than or equal to 0";
+  if (!(i % 1 == 0 && i >= 0)) {
+    throw "row must be an integer greater than or equal to 0";
   }
 
   var fields = this.getFields();
-  return fields.map(function(field) {return this.table[field][i];});
+  return fields.map(function(field) {return this.table[field][i];}, this);
 };
 
 
@@ -740,10 +742,9 @@ JSplyr.Table.prototype.toMatrix = function() {
   var fields = this.getFields();
   fields.map(function(field) {output[0].push(field);}, this);
 
-  for (var row in this.table[fields[0]]) {
-    output.push(fields.map(function(field) {
-      return this.table[field][row]
-    }, this));
+
+  for (var row = 0; row < this.table[fields[0]].length; row++) {
+    output.push(this.getRow(row));
   }
   return output;
 };
