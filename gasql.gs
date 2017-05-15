@@ -738,14 +738,13 @@ JSplyr.Table.prototype.limit = function(limit, offset) {
  * @returns {Array} An array of arrays containing the table.
  */
 JSplyr.Table.prototype.toMatrix = function() {
-  var output = [[]];
+  var output = [];
   var fields = this.getFields();
-  fields.map(function(field) {output[0].push(field);}, this);
+  output.push(fields);
 
-
-  for (var row = 0; row < this.table[fields[0]].length; row++) {
-    output.push(this.getRow(row));
-  }
+  JSplyr
+      .range(this.rows())
+      .forEach(function(row) {output.push(this.getRow(row));}, this);
   return output;
 };
 
@@ -918,6 +917,12 @@ JSplyr.Table.prototype.is = function(comp) {
 JSplyr.Table.prototype.filter = function(criterion) {
   var fields = this.getFields();
   var output = JSplyr.createOutput(fields);
+
+  function addRow(rowI) {
+    function pushCol(col) {output[field].push(this[field][rowI]);};
+    fields.map(addRow);
+  };
+
 
   for (var row in criterion) {
     if (criterion[row]) {
